@@ -1,4 +1,5 @@
 data/store.json
+dist/
 uploads/*
 !.gitkeep
 .DS_Store
