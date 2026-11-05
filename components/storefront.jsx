@@ -73,7 +73,7 @@ export default function Storefront({ initialStore }) {
     <div className="shop-shell" style={{ '--accent': store.accent || fallback.accent, '--paper': store.background || fallback.background, '--ink': store.textColor || fallback.textColor, '--serif': `'${fontName}', Georgia, serif` }}>
       <div className="announcement">{store.announcement}</div>
       <header className="site-header">
-        <a className="wordmark" href="#top" aria-label="Accueil"><span className="wordmark-mark">{store.logo ? <img className="brand-logo" src={store.logo} alt="" /> : 'm.'}</span><span>{store.brand}</span></a>
+        <a className="wordmark" href="#top" aria-label={store.brand}><img className="crooza-logo" src={store.logo || '/images/crooza-mark.png'} alt={`Logo ${store.brand}`} /></a>
         <nav className="main-nav" aria-label="Navigation principale"><a href="#collection">La collection</a><a href="#about">Notre histoire</a><a href="#contact">Contact</a></nav>
         <button className="admin-trigger" type="button" onClick={() => setAdminOpen(true)}><span className="admin-icon">✳</span> Espace boutique</button>
       </header>
