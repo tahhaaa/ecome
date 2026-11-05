@@ -1,5 +1,10 @@
 data/store.json
 dist/
+.next/
+node_modules/
+.vercel/
+.env*
+!.env.example
 uploads/*
 !.gitkeep
 .DS_Store
