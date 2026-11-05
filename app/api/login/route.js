@@ -5,7 +5,7 @@ export const runtime = 'nodejs';
 
 export async function POST(request) {
   const { ADMIN_PASSWORD, SESSION_SECRET } = process.env;
-  if (!ADMIN_PASSWORD || !SESSION_SECRET || !process.env.SUPABASE_URL || !process.env.SUPABASE_SERVICE_ROLE_KEY) {
+  if (!ADMIN_PASSWORD || !SESSION_SECRET || !process.env.SUPABASE_URL || !(process.env.SUPABASE_SECRET_KEY || process.env.SUPABASE_SERVICE_ROLE_KEY)) {
     return Response.json({ error: 'La connexion administrateur n’est pas configurée.' }, { status: 503 });
   }
   try {

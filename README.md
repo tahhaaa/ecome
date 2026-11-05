@@ -17,7 +17,7 @@ Ouvrez <http://localhost:3000>.
 
 1. Créez un projet Supabase.
 2. Dans **SQL Editor**, exécutez `supabase/migrations/0001_init.sql`.
-3. Copiez l’URL du projet et la clé serveur `service_role` depuis **Project Settings → API**. La clé serveur contourne les règles RLS : elle doit rester dans les variables d’environnement, jamais dans un composant client.
+3. Copiez l’URL du projet et la clé **Secret** (`sb_secret_…`) depuis **Project Settings → API Keys**. Cette clé contourne les règles RLS : elle doit rester dans les variables d’environnement, jamais dans un composant client. L’ancienne clé `service_role` reste acceptée comme solution de compatibilité.
 
 ## Déployer sur Vercel
 
@@ -28,7 +28,7 @@ Ouvrez <http://localhost:3000>.
 | Variable | Valeur |
 | --- | --- |
 | `SUPABASE_URL` | URL du projet Supabase |
-| `SUPABASE_SERVICE_ROLE_KEY` | Clé serveur secrète Supabase |
+| `SUPABASE_SECRET_KEY` | Clé Secret serveur Supabase (`sb_secret_…`) |
 | `SUPABASE_BUCKET` | `product-images` |
 | `ADMIN_PASSWORD` | Mot de passe unique de 12 caractères minimum |
 | `SESSION_SECRET` | Secret aléatoire généré avec `openssl rand -hex 32` |
