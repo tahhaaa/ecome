@@ -1,0 +1,58 @@
+{
+  "brand": "maison miro",
+  "headline": "Des objets qui|font la différence.",
+  "description": "Des pièces singulières, pensées pour apporter un peu de beau dans votre quotidien.",
+  "accent": "#c36e4f",
+  "background": "#f7f5ef",
+  "textColor": "#292b26",
+  "font": "Playfair Display",
+  "logo": "",
+  "announcement": "Une sélection faite avec soin · Livraison partout au Maroc",
+  "heroImage": "https://images.unsplash.com/photo-1490312278390-ab64016e0aa9?auto=format&fit=crop&w=1300&q=85",
+  "aboutImage": "https://images.unsplash.com/photo-1600210492486-724fe5c67fb0?auto=format&fit=crop&w=1200&q=85",
+  "products": [
+    {
+      "id": "p1",
+      "name": "Vase Solène",
+      "description": "Céramique artisanale · Sable",
+      "price": 320,
+      "tag": "Pièce coup de cœur",
+      "image": "https://images.unsplash.com/photo-1578500494198-246f612d3b3d?auto=format&fit=crop&w=900&q=82",
+      "photos": [
+        "https://images.unsplash.com/photo-1578500494198-246f612d3b3d?auto=format&fit=crop&w=900&q=82",
+        "https://images.unsplash.com/photo-1578749556568-bc2c40e68b61?auto=format&fit=crop&w=1000&q=82"
+      ]
+    },
+    {
+      "id": "p2",
+      "name": "Lampe Alba",
+      "description": "Laiton brossé · Lumière douce",
+      "price": 690,
+      "tag": "Nouvelle pièce",
+      "image": "https://images.unsplash.com/photo-1507473885765-e6ed057f782c?auto=format&fit=crop&w=900&q=82",
+      "photos": [
+        "https://images.unsplash.com/photo-1507473885765-e6ed057f782c?auto=format&fit=crop&w=900&q=82",
+        "https://images.unsplash.com/photo-1543198126-a8ad8e47fb22?auto=format&fit=crop&w=1000&q=82"
+      ]
+    },
+    {
+      "id": "p3",
+      "name": "Sac Atelier",
+      "description": "Coton naturel · Fait main",
+      "price": 450,
+      "tag": "Série limitée",
+      "image": "https://images.unsplash.com/photo-1590874103328-eac38a683ce7?auto=format&fit=crop&w=900&q=82",
+      "photos": [
+        "https://images.unsplash.com/photo-1590874103328-eac38a683ce7?auto=format&fit=crop&w=900&q=82",
+        "https://images.unsplash.com/photo-1584917865442-de89df76afd3?auto=format&fit=crop&w=1000&q=82"
+      ]
+    }
+  ],
+  "collectionTitle": "Nos pièces|préférées.",
+  "collectionNote": "De jolies trouvailles à garder longtemps.|La collection évolue au fil des coups de cœur.",
+  "aboutTitle": "La beauté est|dans les détails.",
+  "aboutTextOne": "Nous croyons aux objets qui ont une âme. À ceux qu’on choisit avec intention, qu’on garde près de soi et qui rendent chaque jour un peu plus beau.",
+  "aboutTextTwo": "Chaque pièce de notre sélection a été choisie pour son caractère, sa qualité et cette petite étincelle qui la rend unique.",
+  "contactTitle": "On est tout|ouïe.",
+  "contactText": "Besoin d’un conseil, d’un détail sur un produit ou juste envie de nous dire bonjour ? Écrivez-nous."
+}

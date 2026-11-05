@@ -1,0 +1,4 @@
+data/store.json
+uploads/*
+!.gitkeep
+.DS_Store
