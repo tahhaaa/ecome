@@ -17,6 +17,6 @@ export async function PUT(request) {
     return Response.json({ ok: true }, { headers: { 'Cache-Control': 'no-store' } });
   } catch (error) {
     console.error('Store save failed:', error.message);
-    return Response.json({ error: 'Enregistrement impossible. Vérifiez Supabase.' }, { status: 503 });
+    return Response.json({ error: `Enregistrement refusé par Supabase : ${error.message || 'erreur inconnue'}` }, { status: 503 });
   }
 }

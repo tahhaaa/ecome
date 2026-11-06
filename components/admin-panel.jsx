@@ -63,7 +63,7 @@ export default function AdminPanel({ open, onClose, authenticated, onAuthenticat
     try {
       const photos = String(form.get('photoUrls') || '').split('\n').map(value => value.trim()).filter(Boolean);
       for (const file of imageFiles) photos.push(await upload(file));
-      if (!photos.length) throw new Error('Ajoutez au moins une photo ou un lien d’image.');
+      if (!photos.length) photos.push('/images/crooza-mark.png');
       const product = {
         id: editingId === 'new' ? `p${Date.now()}` : editingId,
         name: String(form.get('name')).trim(),
@@ -188,7 +188,7 @@ export default function AdminPanel({ open, onClose, authenticated, onAuthenticat
                     <label>Étiquette<input name="tag" maxLength={28} defaultValue={editing?.tag || 'À découvrir'} /></label>
                     <label>Ajouter des photos<input name="images" type="file" accept="image/png,image/jpeg,image/webp,image/gif" multiple /></label>
                     <label className="wide">Photos actuelles ou URL (une par ligne)<textarea name="photoUrls" rows="3" defaultValue={currentPhotos.join('\n')} placeholder="https://…" /></label>
-                    <div className="wide photo-hint">La première photo est la couverture. Les photos importées peuvent peser jusqu’à 3 Mo chacune.</div>
+                    <div className="wide photo-hint">La photo est facultative : sans photo, le logo Crooza sera utilisé. Les photos importées peuvent peser jusqu’à 3 Mo chacune.</div>
                     <div className="wide editor-actions"><button className="button button-dark" type="submit" disabled={busy}>{busy ? 'Enregistrement…' : 'Enregistrer le produit ↗'}</button><button className="text-link" type="button" onClick={() => setEditingId(null)}>Annuler</button></div>
                   </form>
                 )}
