@@ -73,7 +73,7 @@ export default function AdminPanel({ open, onClose, authenticated, onAuthenticat
         photos,
         image: photos[0],
       };
-      const products = editingId
+      const products = editingId !== 'new'
         ? store.products.map(item => item.id === editingId ? product : item)
         : [...store.products, product];
       await saveStore({ ...store, products });
