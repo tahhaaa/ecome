@@ -13,3 +13,120 @@
 .admin-foot button{border:0;background:transparent;color:var(--muted);text-decoration:underline;font-size:9px;cursor:pointer}
 .admin-product-meta strong{font-weight:600}
 @media(max-width:700px){.editor-actions{align-items:flex-start;flex-direction:column}}
+
+/* Responsive refinements: fluid spacing, usable navigation and touch targets. */
+html{scroll-padding-top:24px;-webkit-text-size-adjust:100%}
+body{overflow-x:hidden}
+button,a,input,textarea,select{-webkit-tap-highlight-color:transparent}
+button:focus-visible,a:focus-visible,input:focus-visible,textarea:focus-visible,select:focus-visible{outline:2px solid var(--accent);outline-offset:3px}
+.announcement{padding-top:max(9px,env(safe-area-inset-top));line-height:1.5}
+.hero,.section-wrap,.about,.contact,.site-header,.footer{min-width:0}
+.hero-copy,.hero-visual,.about-copy,.contact-right{min-width:0}
+.product-card,.product-info>div{min-width:0}
+.product-info h3,.product-title-button{overflow-wrap:anywhere}
+.product-order,.product-details-link{min-height:40px}
+.floating-wa{bottom:max(15px,env(safe-area-inset-bottom))}
+
+@media(min-width:651px) and (max-width:900px){
+  .site-header{padding-left:5%;padding-right:5%}
+  .main-nav{gap:clamp(16px,3vw,30px)}
+  .hero{min-height:0;padding:70px 7% 86px;grid-template-columns:minmax(0,1fr) minmax(0,.9fr);gap:5%}
+  .hero h1{font-size:clamp(48px,7vw,68px)}
+  .hero-visual{height:clamp(340px,48vw,410px)}
+  .hero-side-note{right:-20px}
+  .section-wrap{padding-left:7%;padding-right:7%}
+  .product-grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:28px 18px}
+  .product-image{height:auto;aspect-ratio:.9}
+  .about-copy{padding:50px 9%}
+  .about-copy h2{font-size:clamp(38px,5vw,48px)}
+}
+
+@media(max-width:650px){
+  .announcement{padding:8px 12px;font-size:clamp(7px,2.1vw,9px);letter-spacing:.1em}
+  .site-header{height:auto;min-height:0;padding:10px 5% 0;display:flex;flex-wrap:wrap;column-gap:8px;row-gap:0}
+  .site-header .wordmark{min-height:44px;flex:1 1 auto;min-width:0}
+  .site-header .crooza-logo{width:clamp(76px,24vw,92px);height:42px}
+  .admin-trigger{min-height:40px;padding:9px 11px;white-space:nowrap;font-size:clamp(8px,2.5vw,10px)}
+  .main-nav{display:flex;order:3;flex:1 0 calc(100% + 10.5%);width:calc(100% + 10.5%);margin:0 -5.5% 0;gap:0;overflow-x:auto;overscroll-behavior-x:contain;scrollbar-width:none;border-top:1px solid rgba(41,43,38,.09);padding:0 5%;-webkit-overflow-scrolling:touch}
+  .main-nav::-webkit-scrollbar{display:none}
+  .main-nav a{flex:0 0 auto;min-height:43px;padding:0 13px;display:flex;align-items:center;font-size:11px;white-space:nowrap}
+  .hero{padding:45px 6% 58px;gap:27px}
+  .hero h1{font-size:clamp(43px,12vw,58px);line-height:1.02;margin:17px 0}
+  .hero-description{max-width:42ch;margin-bottom:23px;line-height:1.8}
+  .button{min-height:46px;padding:13px 16px;gap:16px}
+  .hero-visual{width:calc(100% - 14px);height:auto;aspect-ratio:1.02;margin:0 10px 0 4px}
+  .hero-frame{width:91%}
+  .hero-sticker{left:-7px;top:16px;width:68px;height:68px;font-size:7px}
+  .hero-sticker b{font-size:15px}
+  .hero-side-note{right:-15px;font-size:7px}
+  .image-caption{left:16px;bottom:16px;font-size:13px}
+  .hero-index{bottom:19px;right:6%;font-size:8px}
+  .ticker{padding:15px 0}
+  .ticker-track{min-width:0;width:max-content;gap:26px;justify-content:flex-start;padding-left:7%;animation-duration:28s}
+  .ticker-track span,.ticker-track b{font-size:15px}
+  .section-wrap{padding-left:6%;padding-right:6%}
+  .collection{padding-top:55px;padding-bottom:40px}
+  .section-heading{margin-bottom:22px}
+  .section-heading h2,.about-copy h2{font-size:clamp(34px,9vw,41px)}
+  .section-aside{font-size:10px;line-height:1.7}
+  .product-grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:24px 12px}
+  .product-image{height:auto;aspect-ratio:.78}
+  .product-tag{left:8px;top:8px;padding:6px 7px;font-size:7px}
+  .product-heart{right:8px;top:8px;width:28px;height:28px}
+  .product-info{gap:5px;padding-top:11px}
+  .product-info h3,.product-title-button{font-size:clamp(13px,4vw,16px)}
+  .product-info p{font-size:9px;overflow-wrap:anywhere}
+  .product-price{font-size:9px;padding-top:3px}
+  .product-details-link,.product-order{font-size:8px;letter-spacing:.04em}
+  .collection-bottom{margin-top:38px;font-size:7px;letter-spacing:.1em}
+  .about-art{min-height:0;aspect-ratio:1.25}
+  .about-copy{padding:39px 7% 44px}
+  .about-copy>p:not(.eyebrow){font-size:12px}
+  .contact{padding-top:52px;padding-bottom:52px}
+  .contact h2{font-size:clamp(38px,10vw,47px)}
+  .contact-right p{font-size:12px}
+  .footer{padding:20px 6%;row-gap:13px}
+  .footer-brand{flex:1 0 100%}
+  .footer>span:last-child{font-size:7px}
+  .floating-wa{right:13px;width:48px;height:48px}
+  .detail-panel{width:100%;max-height:calc(100dvh - 20px)}
+  .detail-main-image{height:min(46dvh,370px)}
+  .admin-overlay{align-items:flex-end}
+  .admin-panel{width:100%;height:min(94dvh,900px);max-height:calc(100dvh - env(safe-area-inset-top));padding:20px 6% calc(20px + env(safe-area-inset-bottom));border-radius:18px 18px 0 0;overscroll-behavior:contain}
+  .admin-head h2{font-size:clamp(27px,8vw,32px)}
+  .admin-tabs{gap:18px;overflow-x:auto;align-items:center;scrollbar-width:none}
+  .admin-tabs::-webkit-scrollbar{display:none}
+  .admin-tab{flex:0 0 auto;min-height:43px}
+  .admin-logout{flex:0 0 auto;min-height:43px;padding:0 3px;white-space:nowrap}
+  .admin-section-title{gap:12px;align-items:center}
+  .admin-section-title p{max-width:25ch;line-height:1.5}
+  .add-product{flex:0 0 auto;min-height:42px}
+  .admin-product{grid-template-columns:54px minmax(0,1fr) 32px;gap:10px;padding:10px}
+  .admin-product-thumb{width:54px;height:58px}
+  .admin-product-meta strong{overflow-wrap:anywhere}
+  .tiny-button{min-width:32px;min-height:32px}
+  .product-editor{gap:12px}
+  .product-editor label,.style-form label{font-size:10px}
+  .product-editor input,.product-editor textarea,.style-form input,.style-form textarea,.style-form select{min-height:42px;font-size:16px}
+  .product-editor input[type=file],.style-form input[type=file]{font-size:12px}
+  .editor-actions{flex-direction:row;align-items:center;flex-wrap:wrap;gap:12px}
+  .editor-actions .button,.style-form>.button{min-height:46px}
+  .admin-foot{align-items:flex-start;flex-direction:column;line-height:1.6}
+  .admin-foot button{min-height:36px;padding:0}
+  .admin-login input{min-height:44px;font-size:16px}
+}
+
+@media(max-width:380px){
+  .product-grid{gap:20px 9px}
+  .product-image{aspect-ratio:.72}
+  .product-info{display:block}
+  .product-price{display:block;padding-top:6px}
+  .product-order{font-size:7px}
+  .admin-section-title{align-items:flex-start}
+  .admin-section-title h3{font-size:17px}
+  .add-product{padding:10px;font-size:8px}
+}
+
+@media(prefers-reduced-motion:reduce){
+  *,*::before,*::after{scroll-behavior:auto!important;animation-duration:.01ms!important;animation-iteration-count:1!important;transition-duration:.01ms!important}
+}

@@ -1,9 +1,9 @@
 import './globals.css';
 
 export const metadata = {
-  title: 'Maison Miro — Objets choisis',
+  title: 'Crooza',
   description: 'Une sélection de pièces choisies avec soin. Découvrez la boutique et commandez directement sur WhatsApp.',
-  applicationName: 'Maison Miro',
+  applicationName: 'Crooza',
 };
 
 export const viewport = { themeColor: '#f7f5ef' };
