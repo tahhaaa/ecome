@@ -191,6 +191,29 @@ export default function AdminPanel({ open, onClose, authenticated, onAuthenticat
     }
   }
 
+  async function savePromotions(event) {
+    event.preventDefault();
+    setBusy(true);
+    const form = new FormData(event.currentTarget);
+    try {
+      const promotions = {
+        freeShipping: { enabled: form.get('freeShipping') === 'on' },
+        buyXGetY: {
+          enabled: form.get('bundleEnabled') === 'on',
+          buyQuantity: Math.min(10, Math.max(1, Number.parseInt(form.get('buyQuantity'), 10) || 2)),
+          freeQuantity: Math.min(5, Math.max(1, Number.parseInt(form.get('freeQuantity'), 10) || 1)),
+          label: String(form.get('bundleLabel') || '').trim().slice(0, 60),
+        },
+      };
+      await saveStore({ ...store, promotions });
+      notify('Promotions enregistrées ✓');
+    } catch (error) {
+      notify(error.message);
+    } finally {
+      setBusy(false);
+    }
+  }
+
   async function resetStore() {
     if (!window.confirm('Réinitialiser les produits et réglages pour tous les visiteurs ?')) return;
     try {
@@ -224,6 +247,7 @@ export default function AdminPanel({ open, onClose, authenticated, onAuthenticat
           <div>
             <div className="admin-tabs">
               <button className={`admin-tab ${tab === 'products' ? 'active' : ''}`} onClick={() => setTab('products')} type="button">Produits</button>
+              <button className={`admin-tab ${tab === 'promotions' ? 'active' : ''}`} onClick={() => setTab('promotions')} type="button">Promotions</button>
               <button className={`admin-tab ${tab === 'style' ? 'active' : ''}`} onClick={() => setTab('style')} type="button">Style & textes</button>
               <button className="admin-logout" onClick={logout} type="button">Déconnexion</button>
             </div>
@@ -254,6 +278,23 @@ export default function AdminPanel({ open, onClose, authenticated, onAuthenticat
                     <div className="wide editor-actions"><button className="button button-dark" type="submit" disabled={busy}>{busy ? 'Enregistrement…' : 'Enregistrer le produit ↗'}</button><button className="text-link" type="button" onClick={() => setEditingId(null)}>Annuler</button></div>
                   </form>
                 )}
+              </div>
+            ) : tab === 'promotions' ? (
+              <div className="admin-content">
+                <div className="admin-section-title"><div><h3>Offres de la boutique</h3><p>Active les promotions quand tu veux. Elles s’appliquent automatiquement au panier et au montant à payer.</p></div></div>
+                <form className="style-form promotion-form" key={JSON.stringify(store.promotions || {})} onSubmit={savePromotions}>
+                  <section className="promotion-card">
+                    <label className="promotion-toggle"><input name="freeShipping" type="checkbox" defaultChecked={store.promotions?.freeShipping?.enabled === true} /><span><strong>Livraison gratuite</strong><small>Supprime les frais de livraison pour toutes les villes tant que l’offre est active.</small></span></label>
+                    <span className="promotion-badge">Offre boutique</span>
+                  </section>
+                  <section className="promotion-card promotion-bundle">
+                    <label className="promotion-toggle"><input name="bundleEnabled" type="checkbox" defaultChecked={store.promotions?.buyXGetY?.enabled === true} /><span><strong>Achetés + offerts</strong><small>Pour un même produit et une même pointure, le cadeau est ajouté au stock réservé.</small></span></label>
+                    <div className="promotion-fields"><label>Quantité achetée<input name="buyQuantity" type="number" min="1" max="10" required defaultValue={store.promotions?.buyXGetY?.buyQuantity ?? 2} /></label><span className="promotion-plus">+</span><label>Quantité offerte<input name="freeQuantity" type="number" min="1" max="5" required defaultValue={store.promotions?.buyXGetY?.freeQuantity ?? 1} /></label></div>
+                    <label>Texte de l’offre (facultatif)<input name="bundleLabel" maxLength={60} placeholder="Ex. 2 achetées, 1 offerte" defaultValue={store.promotions?.buyXGetY?.label || ''} /></label>
+                  </section>
+                  <button className="button button-dark" type="submit" disabled={busy}>{busy ? 'Enregistrement…' : 'Enregistrer les promotions ↗'}</button>
+                  <p className="save-note">Le client voit le prix et le cadeau avant de confirmer. Le stock est vérifié et déduit automatiquement.</p>
+                </form>
               </div>
             ) : (
               <div className="admin-content">

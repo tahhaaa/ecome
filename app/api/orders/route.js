@@ -45,7 +45,7 @@ export async function POST(request) {
     } catch (error) {
       console.error('Order push failed:', error.message);
     }
-    return Response.json({ ok: true, order: { id: createdOrder.id, total: createdOrder.total, size: size || null }, trackingToken }, { status: 201, headers: { 'Cache-Control': 'no-store' } });
+    return Response.json({ ok: true, order: { id: createdOrder.id, total: createdOrder.total, subtotal: createdOrder.subtotal, shipping_fee: createdOrder.shipping_fee, free_quantity: createdOrder.free_quantity || 0, size: size || null }, trackingToken }, { status: 201, headers: { 'Cache-Control': 'no-store' } });
   } catch (error) {
     console.error('Order save failed:', error.message);
     const message = error.message || '';

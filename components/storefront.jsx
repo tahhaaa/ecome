@@ -50,6 +50,10 @@ export default function Storefront({ initialStore }) {
   const collectionTitle = String(store.collectionTitle || '').split('|');
   const waIntro = whatsapp('Bonjour, j’aimerais en savoir plus sur votre boutique.');
   const fontName = String(store.font || fallback.font).replace(/["';]/g, '');
+  const activePromotions = [
+    store.promotions?.freeShipping?.enabled ? 'Livraison offerte partout au Maroc' : '',
+    store.promotions?.buyXGetY?.enabled ? store.promotions.buyXGetY.label || `${store.promotions.buyXGetY.buyQuantity} achetées, ${store.promotions.buyXGetY.freeQuantity} offerte` : '',
+  ].filter(Boolean);
 
   return (
     <div className="shop-shell" style={{ '--accent': store.accent || fallback.accent, '--paper': store.background || fallback.background, '--ink': store.textColor || fallback.textColor, '--serif': `'${fontName}', Georgia, serif` }}>
@@ -73,6 +77,8 @@ export default function Storefront({ initialStore }) {
         </section>
 
         <section className="ticker" aria-label="Notre sélection"><div className="ticker-track"><span>Beau au quotidien</span><b>✳</b><span>Fait pour durer</span><b>✳</b><span>Choisi avec soin</span><b>✳</b><span>Beau au quotidien</span><b>✳</b><span>Fait pour durer</span><b>✳</b><span>Choisi avec soin</span><b>✳</b></div></section>
+
+        {activePromotions.length > 0 && <section className="promotion-strip" aria-label="Offres en cours">{activePromotions.map((promotion, index) => <span key={`${promotion}-${index}`}><b>✳</b>{promotion}</span>)}</section>}
 
         <section className="collection section-wrap" id="collection">
           <div className="section-heading"><div><p className="eyebrow"><span className="eyebrow-line" /> À découvrir</p><h2>{collectionTitle[0]} <em>{collectionTitle.slice(1).join(' ')}</em></h2></div><p className="section-aside">{lines(store.collectionNote)}</p></div>
@@ -98,7 +104,7 @@ export default function Storefront({ initialStore }) {
       <a className="floating-wa" href={waIntro} target="_blank" rel="noreferrer" aria-label="Nous écrire sur WhatsApp"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20.5 3.5A11.8 11.8 0 0 0 12.1 0C5.6 0 .3 5.3.3 11.8c0 2.1.6 4.2 1.6 6L0 24l6.4-1.7a11.9 11.9 0 0 0 5.7 1.5h.1c6.5 0 11.8-5.3 11.8-11.8 0-3.2-1.2-6.2-3.5-8.5ZM12.1 21.8a9.9 9.9 0 0 1-5.1-1.4l-.4-.2-3.8 1 1-3.7-.3-.4a9.9 9.9 0 0 1-1.5-5.3c0-5.5 4.5-10 10-10 2.7 0 5.2 1 7.1 2.9a10 10 0 0 1 2.9 7.1c0 5.5-4.5 10-10 10Zm5.5-7.5c-.3-.1-1.7-.8-2-.9-.3-.1-.5-.1-.7.2-.2.3-.8.9-.9 1.1-.2.2-.3.2-.6.1-.3-.1-1.2-.5-2.4-1.5-.9-.8-1.5-1.8-1.7-2.1-.2-.3 0-.4.1-.6.1-.1.3-.3.4-.5.1-.2.2-.3.3-.5.1-.2 0-.4 0-.5-.1-.1-.7-1.6-.9-2.2-.2-.6-.5-.5-.7-.5h-.6c-.2 0-.5.1-.8.4-.3.3-1 1-1 2.4s1 2.8 1.1 3c.1.2 2 3.1 4.8 4.3.7.3 1.2.5 1.7.6.7.2 1.3.2 1.8.1.6-.1 1.7-.7 1.9-1.4.2-.7.2-1.3.2-1.4-.1-.1-.3-.2-.6-.4Z" /></svg></a>
 
       {selected && <div className="detail-overlay open" onMouseDown={event => event.target === event.currentTarget && setSelected(null)}><section className="detail-panel" role="dialog" aria-modal="true" aria-label={`Détail : ${selected.name}`}><button className="icon-button detail-close" type="button" onClick={() => setSelected(null)} aria-label="Fermer">×</button><div className="detail-gallery"><div className="detail-main-image"><img src={gallery[photoIndex]} alt={`${selected.name} — photo ${photoIndex + 1}`} /><button className="gallery-arrow gallery-prev" type="button" aria-label="Photo précédente" hidden={gallery.length < 2} onClick={() => setPhotoIndex(index => (index - 1 + gallery.length) % gallery.length)}>←</button><button className="gallery-arrow gallery-next" type="button" aria-label="Photo suivante" hidden={gallery.length < 2} onClick={() => setPhotoIndex(index => (index + 1) % gallery.length)}>→</button><span className="gallery-count">{photoIndex + 1} / {gallery.length}</span></div><div className="detail-thumbnails">{gallery.length > 1 && gallery.map((photo, index) => <button className={`detail-thumb ${index === photoIndex ? 'active' : ''}`} type="button" key={photo} onClick={() => setPhotoIndex(index)} aria-label={`Afficher la photo ${index + 1}`}><img src={photo} alt="" /></button>)}</div></div><div className="detail-copy"><p className="eyebrow"><span className="eyebrow-line" /> {selected.inStock === false ? 'Épuisé' : selected.tag || 'À découvrir'}</p><h2>{selected.name}</h2><p className="detail-price">{Number(selected.price || 0).toLocaleString('fr-FR')} DH</p><p className="detail-description">{selected.description}</p><button className="button button-dark detail-order" type="button" onClick={() => setOrderProduct(selected)} disabled={selected.inStock === false}>{selected.inStock === false ? 'Indisponible' : 'Commander'} <span>↗</span></button><p className="detail-help">Paiement à la livraison · livraison partout au Maroc.</p></div></section></div>}
-      {orderProduct && <CheckoutModal product={orderProduct} onClose={() => setOrderProduct(null)} />}
+      {orderProduct && <CheckoutModal product={orderProduct} promotions={store.promotions} onClose={() => setOrderProduct(null)} />}
     </div>
   );
 }

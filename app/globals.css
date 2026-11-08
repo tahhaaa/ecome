@@ -471,6 +471,24 @@ button:focus-visible,a:focus-visible,input:focus-visible,textarea:focus-visible,
 .delete-order-button{justify-self:start;padding:5px 0;border:0;background:none;color:#a04c3e;font:9px var(--sans);text-decoration:underline;cursor:pointer}
 .product-order:disabled,.detail-order:disabled{opacity:.45;cursor:not-allowed;color:var(--muted)}
 .product-order:disabled span{color:var(--muted)}
+.promotion-strip{display:flex;justify-content:center;flex-wrap:wrap;gap:12px;padding:19px 7%;background:#f0e7d9;border-bottom:1px solid var(--line)}
+.promotion-strip span{display:inline-flex;align-items:center;gap:8px;color:var(--ink);font-size:10px;letter-spacing:.03em}
+.promotion-strip b{color:var(--accent);font-size:16px;font-weight:400}
+.promotion-card{position:relative;display:grid;gap:16px;padding:18px;border:1px solid var(--line);background:#fbfaf6}
+.promotion-toggle{display:flex!important;flex-direction:row!important;align-items:flex-start;gap:12px!important;color:var(--ink)!important;cursor:pointer}
+.promotion-toggle input{width:18px;height:18px;accent-color:var(--accent);margin:2px 0 0;flex:0 0 auto}
+.promotion-toggle span{display:grid;gap:5px}
+.promotion-toggle strong{font-family:var(--serif);font-size:18px;font-weight:500;letter-spacing:0;color:var(--ink)}
+.promotion-toggle small{max-width:390px;color:var(--muted);font-size:10px;line-height:1.6;letter-spacing:0}
+.promotion-badge{position:absolute;right:16px;top:17px;padding:6px 8px;background:#eee7dc;color:#80634f;font-size:8px;letter-spacing:.06em;text-transform:uppercase}
+.promotion-fields{display:grid;grid-template-columns:minmax(0,1fr) auto minmax(0,1fr);gap:12px;align-items:end}
+.promotion-fields label{display:flex;flex-direction:column;gap:6px;color:var(--muted);font-size:9px}
+.promotion-fields input{width:100%;border:1px solid var(--line);background:#fff;padding:9px;color:var(--ink);font-size:12px}
+.promotion-plus{padding-bottom:10px;color:var(--accent);font-size:18px}
+.promotion-form>.button{width:fit-content;margin-top:3px;border:0;cursor:pointer}
+.checkout-promo-note{margin:0;padding:10px 12px;background:#f0e7d9;color:#74503e;font-size:10px;line-height:1.5}
+.checkout-form select{width:100%;min-height:42px;border:1px solid #dedbd1;border-radius:3px;background:#fbfaf6;padding:10px;color:var(--ink);font-size:12px}
+@media(max-width:650px){.promotion-strip{gap:8px;padding:14px 6%}.promotion-strip span{text-align:center;font-size:9px}.promotion-badge{position:static;width:fit-content;margin-left:30px}.promotion-card{padding:14px}.promotion-fields{gap:8px}}
 .admin-product-meta{min-width:0}
 .admin-product-meta span{display:block;line-height:1.5;overflow-wrap:anywhere}
 .admin-product{grid-template-columns:65px minmax(0,1fr) 26px}
