@@ -15,6 +15,7 @@ export async function POST(request) {
     const phone = String(body.phone || '').replace(/[\s().-]/g, '').slice(0, 20);
     const city = String(body.city || '').trim().slice(0, 80);
     const productId = String(body.productId || '').slice(0, 100);
+    const size = String(body.size || '').trim().slice(0, 30);
     const quantity = Math.max(1, Math.min(10, Number.parseInt(body.quantity, 10) || 1));
     if (customerName.length < 2 || !/^\+?\d{9,15}$/.test(phone) || city.length < 2 || !productId) {
       return Response.json({ error: 'Vérifiez le nom, le téléphone et la ville.' }, { status: 400 });
@@ -23,6 +24,9 @@ export async function POST(request) {
     const rows = await db('shop_store?select=content&id=eq.1');
     const product = rows?.[0]?.content?.products?.find(item => String(item.id) === productId);
     if (!product) return Response.json({ error: 'Ce produit n’est plus disponible.' }, { status: 404 });
+    const availableSizes = Array.isArray(product.sizes) ? product.sizes.map(value => String(value).trim()).filter(Boolean) : [];
+    if (availableSizes.length && !availableSizes.includes(size)) return Response.json({ error: 'Choisissez une taille disponible pour ce produit.' }, { status: 400 });
+    if (!availableSizes.length && size) return Response.json({ error: 'Ce produit est proposé en taille unique.' }, { status: 400 });
     const unitPrice = Number(product.price);
     if (!Number.isFinite(unitPrice) || unitPrice < 0) return Response.json({ error: 'Prix du produit invalide.' }, { status: 400 });
     const subtotal = unitPrice * quantity;
@@ -31,7 +35,7 @@ export async function POST(request) {
       customer_name: customerName,
       phone,
       city,
-      items: [{ id: String(product.id), name: String(product.name), image: String(product.image || ''), unit_price: unitPrice, quantity }],
+      items: [{ id: String(product.id), name: String(product.name), image: String(product.image || ''), unit_price: unitPrice, quantity, size: size || null }],
       subtotal,
       shipping_fee: shippingFee,
       total: subtotal + shippingFee,
@@ -44,11 +48,11 @@ export async function POST(request) {
     if (!createdOrder) throw new Error('Supabase n’a pas retourné la commande enregistrée.');
 
     try {
-      await sendOrderPush(createdOrder, customerName, product.name);
+      await sendOrderPush(createdOrder, customerName, `${product.name}${size ? ` · taille ${size}` : ''}`);
     } catch (error) {
       console.error('Order push failed:', error.message);
     }
-    return Response.json({ ok: true, order: { id: createdOrder.id, total: createdOrder.total } }, { status: 201, headers: { 'Cache-Control': 'no-store' } });
+    return Response.json({ ok: true, order: { id: createdOrder.id, total: createdOrder.total, size: size || null } }, { status: 201, headers: { 'Cache-Control': 'no-store' } });
   } catch (error) {
     console.error('Order save failed:', error.message);
     return Response.json({ error: 'La commande n’a pas pu être enregistrée. Réessayez dans un instant.' }, { status: 503 });

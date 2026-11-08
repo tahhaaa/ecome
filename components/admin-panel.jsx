@@ -70,6 +70,7 @@ export default function AdminPanel({ open, onClose, authenticated, onAuthenticat
         description: String(form.get('description')).trim(),
         price: Number(form.get('price')),
         tag: String(form.get('tag')).trim() || 'À découvrir',
+        sizes: [...new Set(String(form.get('sizes') || '').split(',').map(value => value.trim()).filter(Boolean))].slice(0, 20),
         photos,
         image: photos[0],
       };
@@ -174,7 +175,7 @@ export default function AdminPanel({ open, onClose, authenticated, onAuthenticat
                 {store.products.map(product => (
                   <article className="admin-product" key={product.id}>
                     <img className="admin-product-thumb" src={product.image} alt="" />
-                    <div className="admin-product-meta"><strong>{product.name}</strong><span>{Number(product.price || 0).toLocaleString('fr-FR')} DH</span></div>
+                    <div className="admin-product-meta"><strong>{product.name}</strong><span>{Number(product.price || 0).toLocaleString('fr-FR')} DH</span><span>{product.sizes?.length ? `Tailles : ${product.sizes.join(', ')}` : 'Taille unique'}</span></div>
                     <div className="admin-product-actions"><button className="tiny-button" type="button" onClick={() => setEditingId(product.id)} aria-label={`Modifier ${product.name}`}>✎</button><button className="tiny-button delete" type="button" onClick={() => removeProduct(product.id)} aria-label={`Supprimer ${product.name}`}>×</button></div>
                   </article>
                 ))}
@@ -184,6 +185,7 @@ export default function AdminPanel({ open, onClose, authenticated, onAuthenticat
                   <form className="product-editor" key={editingId} onSubmit={saveProduct}>
                     <label>Nom du produit<input name="name" required maxLength={55} defaultValue={editing?.name || ''} /></label>
                     <label>Prix (DH)<input name="price" type="number" min="0" required defaultValue={editing?.price ?? ''} /></label>
+                    <label className="wide">Tailles disponibles<input name="sizes" maxLength={120} defaultValue={Array.isArray(editing?.sizes) ? editing.sizes.join(', ') : ''} placeholder="Ex. 36, 37, 38, 39 ou S, M, L, XL" /><span className="photo-hint">Sépare chaque taille par une virgule. Laisse vide pour un produit en taille unique.</span></label>
                     <label className="wide">Description<input name="description" maxLength={180} defaultValue={editing?.description || ''} /></label>
                     <label>Étiquette<input name="tag" maxLength={28} defaultValue={editing?.tag || 'À découvrir'} /></label>
                     <label>Ajouter des photos<input name="images" type="file" accept="image/png,image/jpeg,image/webp,image/gif" multiple /></label>
