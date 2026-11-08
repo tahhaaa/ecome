@@ -13,7 +13,7 @@ export async function POST(request) {
     const subscriptions = await db('admin_push_subscriptions?select=endpoint,subscription');
     if (!subscriptions?.length) return Response.json({ error: 'Aucun appareil inscrit. Sur cet iPhone, ouvrez /admin depuis Crooza ajouté à l’écran d’accueil puis activez les notifications.' }, { status: 404 });
 
-    const webpush = (await import('web-push')).default;
+    const webpush = await import('web-push');
     webpush.setVapidDetails(process.env.VAPID_SUBJECT || 'mailto:admin@crooza.vercel.app', process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY, process.env.VAPID_PRIVATE_KEY);
     const results = await Promise.all(subscriptions.map(async ({ endpoint, subscription }) => {
       try {
@@ -31,6 +31,6 @@ export async function POST(request) {
     return Response.json({ ok: sent > 0, sent, failed, error: sent ? null : 'Le service push a refusé tous les appareils. Réactivez les notifications sur l’iPhone et vérifiez les clés VAPID.' });
   } catch (error) {
     console.error('Push test failed:', error.message);
-    return Response.json({ error: 'Test push impossible. Vérifiez les clés VAPID et la migration Supabase 0002.' }, { status: 503 });
+    return Response.json({ error: 'Le test push a échoué côté serveur. Consultez les journaux Vercel pour identifier la cause.' }, { status: 503 });
   }
 }

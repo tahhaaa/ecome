@@ -123,7 +123,7 @@ export async function DELETE(request) {
 
 async function sendOrderPush(order, customerName, productName) {
   if (!process.env.VAPID_PRIVATE_KEY || !process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY) return;
-  const webpush = (await import('web-push')).default;
+  const webpush = await import('web-push');
   webpush.setVapidDetails(process.env.VAPID_SUBJECT || 'mailto:admin@crooza.vercel.app', process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY, process.env.VAPID_PRIVATE_KEY);
   const subscriptions = await db('admin_push_subscriptions?select=subscription');
   const payload = JSON.stringify({ title: 'Nouvelle commande Crooza', body: `${customerName} · ${productName} · ${Number(order.total).toLocaleString('fr-FR')} DH`, url: '/admin' });
