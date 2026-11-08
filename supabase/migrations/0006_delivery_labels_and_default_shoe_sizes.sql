@@ -55,7 +55,7 @@ begin
     if v_size is null or not exists (
       select 1 from jsonb_array_elements_text(v_product->'sizes') as available(size) where available.size = v_size
     ) then raise exception 'SIZE_NOT_AVAILABLE' using errcode = 'P0001'; end if;
-  elsif v_size is null or v_size !~ '^(35|36|37|38|39|40|41|42|43|44|45|46)$' then
+  elsif v_size is null or v_size !~ '^(35-36|37-38|39-40|41-42|43-44|45-46)$' then
     raise exception 'SIZE_NOT_AVAILABLE' using errcode = 'P0001';
   end if;
 

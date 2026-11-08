@@ -14,7 +14,7 @@ export default function CheckoutModal({ product, onClose }) {
   const [success, setSuccess] = useState(null);
   const [size, setSize] = useState('');
   const configuredSizes = Array.isArray(product.sizes) ? product.sizes.filter(Boolean) : [];
-  const sizes = configuredSizes.length ? configuredSizes : Array.from({ length: 12 }, (_, index) => String(index + 35));
+  const sizes = configuredSizes.length ? configuredSizes : ['35-36', '37-38', '39-40', '41-42', '43-44', '45-46'];
   const shipping = useMemo(() => deliveryPrice(city), [city]);
 
   async function submit(event) {

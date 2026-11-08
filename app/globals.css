@@ -424,6 +424,19 @@ button:focus-visible,a:focus-visible,input:focus-visible,textarea:focus-visible,
 .shipping-label-print footer span{display:grid;gap:7px;font:700 9px var(--sans);letter-spacing:.06em}
 .shipping-label-print footer strong{font:700 20px var(--sans)}
 .shipping-label-note{padding-top:10px;border-top:1px dashed #999;font:9px var(--sans);color:#555}
+.size-stock-picker{display:grid;gap:9px;padding:12px 0;border-top:1px solid var(--line)}
+.size-stock-label{font-size:10px;letter-spacing:.04em;color:var(--muted)}
+.size-stock-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}
+.size-stock-option{display:grid;gap:8px;min-width:0;padding:10px;border:1px solid var(--line);background:#fbfaf6}
+.size-stock-option.selected{border-color:var(--accent);background:#fffaf5}
+.size-stock-option>label{display:flex;align-items:center;gap:8px;color:var(--ink);font-size:12px;cursor:pointer}
+.size-stock-option>label input[type=checkbox]{width:16px;height:16px;margin:0;accent-color:var(--accent)}
+.size-quantity{display:grid;grid-template-columns:32px minmax(24px,1fr) 32px;align-items:center;gap:6px}
+.size-quantity button{width:32px;height:30px;border:1px solid var(--line);background:white;color:var(--ink);font-size:17px;cursor:pointer}
+.size-quantity button:disabled{opacity:.4;cursor:not-allowed}
+.size-quantity output{text-align:center;font-size:12px;font-variant-numeric:tabular-nums}
+.size-stock-total{display:flex;justify-content:space-between;align-items:center;padding-top:8px;border-top:1px solid var(--line);color:var(--muted);font-size:10px}
+.size-stock-total strong{color:var(--ink);font-size:12px}
 @media print{
   body *{visibility:hidden!important}
   .shipping-label-overlay,.shipping-label-overlay *{visibility:visible!important}
@@ -432,6 +445,7 @@ button:focus-visible,a:focus-visible,input:focus-visible,textarea:focus-visible,
   .shipping-label-actions,.shipping-address-field,.shipping-label-hint{display:none!important}
   .shipping-label-print{margin:0;padding:10mm;border:1px solid #222;break-inside:avoid}
 }
+@media(max-width:520px){.size-stock-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.size-stock-option{padding:8px}}
 @media(prefers-reduced-motion:reduce){
   html{scroll-behavior:auto}
   *,*::before,*::after{animation-duration:.01ms!important;animation-iteration-count:1!important;scroll-behavior:auto!important;transition-duration:.01ms!important}

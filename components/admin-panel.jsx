@@ -28,20 +28,48 @@ async function upload(file) {
   return (await request('/api/admin/upload', { method: 'POST', body: JSON.stringify({ data: await imageData(file) }) })).url;
 }
 
-function parseStockBySize(value, sizes) {
-  const entries = String(value || '').split(/[\n;,]+/).map(item => item.trim()).filter(Boolean);
-  const inventory = {};
-  for (const entry of entries) {
-    const match = /^(.+?)\s*[:=]\s*(\d+)$/.exec(entry);
-    if (!match) throw new Error('Entre le stock par taille au format « 38 : 2 », une taille par ligne.');
-    const size = match[1].trim();
-    const quantity = Number(match[2]);
-    if (!sizes.includes(size)) throw new Error(`La taille « ${size} » n’est pas dans la liste des tailles disponibles.`);
-    if (Object.hasOwn(inventory, size)) throw new Error(`La taille « ${size} » apparaît plusieurs fois dans le stock.`);
-    if (quantity > 100_000) throw new Error('Le stock indiqué est trop élevé.');
-    inventory[size] = quantity;
+const shoeSizePairs = ['35-36', '37-38', '39-40', '41-42', '43-44', '45-46'];
+
+function SizeStockPicker({ product }) {
+  const existingSizes = Array.isArray(product?.sizes) ? product.sizes.map(String) : [];
+  const options = [...shoeSizePairs, ...existingSizes.filter(size => !shoeSizePairs.includes(size))];
+  const [selectedSizes, setSelectedSizes] = useState(existingSizes);
+  const [quantities, setQuantities] = useState(() => ({ ...(product?.inventoryBySize || {}) }));
+  const totalStock = selectedSizes.reduce((sum, size) => sum + Math.max(0, Number(quantities[size] || 0)), 0);
+
+  function toggleSize(size, checked) {
+    setSelectedSizes(current => checked ? [...current, size] : current.filter(item => item !== size));
+    if (checked) setQuantities(current => ({ ...current, [size]: Number(current[size] || 0) }));
   }
-  return inventory;
+
+  function changeQuantity(size, delta) {
+    setQuantities(current => ({ ...current, [size]: Math.min(100_000, Math.max(0, Number(current[size] || 0) + delta)) }));
+  }
+
+  const inventory = Object.fromEntries(selectedSizes.map(size => [size, Math.max(0, Math.floor(Number(quantities[size] || 0)))]));
+  return (
+    <div className="wide size-stock-picker">
+      <span className="size-stock-label">Pointures et paires disponibles</span>
+      <p className="photo-hint">Coche les pointures à vendre, puis utilise − et + pour indiquer le nombre de paires.</p>
+      <input type="hidden" name="sizes" value={JSON.stringify(selectedSizes)} />
+      <input type="hidden" name="inventoryBySize" value={JSON.stringify(inventory)} />
+      <div className="size-stock-grid">
+        {options.map(size => {
+          const selected = selectedSizes.includes(size);
+          return <div className={`size-stock-option ${selected ? 'selected' : ''}`} key={size}>
+            <label><input type="checkbox" checked={selected} onChange={event => toggleSize(size, event.target.checked)} /><span>{size.replace('-', '–')}</span></label>
+            <div className="size-quantity" aria-label={`Quantité pour ${size.replace('-', ' à ')}`}>
+              <button type="button" onClick={() => changeQuantity(size, -1)} disabled={!selected || !quantities[size]} aria-label={`Retirer une paire en ${size}`}>−</button>
+              <output>{selected ? Number(quantities[size] || 0) : '—'}</output>
+              <button type="button" onClick={() => changeQuantity(size, 1)} disabled={!selected} aria-label={`Ajouter une paire en ${size}`}>+</button>
+            </div>
+          </div>;
+        })}
+      </div>
+      <div className="size-stock-total">Total en stock <strong>{totalStock} paire{totalStock > 1 ? 's' : ''}</strong></div>
+      {product?.stock > 0 && !Object.keys(product?.inventoryBySize || {}).length && <p className="photo-hint">Stock global actuel : {product.stock} paire(s). Répartis-le entre les pointures ci-dessus avant d’enregistrer.</p>}
+    </div>
+  );
 }
 
 export default function AdminPanel({ open, onClose, authenticated, onAuthenticated, store, saveStore, notify }) {
@@ -77,11 +105,15 @@ export default function AdminPanel({ open, onClose, authenticated, onAuthenticat
     const form = new FormData(formElement);
     const imageFiles = Array.from(formElement.elements.images.files);
     try {
-      const sizes = [...new Set(String(form.get('sizes') || '').split(',').map(value => value.trim()).filter(Boolean))].slice(0, 20);
-      const inventoryBySize = parseStockBySize(form.get('inventoryBySize'), sizes);
-      const stock = Object.keys(inventoryBySize).length
-        ? Object.values(inventoryBySize).reduce((total, quantity) => total + quantity, 0)
-        : Number(form.get('stock') || 0);
+      const sizes = [...new Set(JSON.parse(String(form.get('sizes') || '[]')))].slice(0, 20);
+      const inventoryBySize = JSON.parse(String(form.get('inventoryBySize') || '{}'));
+      if (!sizes.length) throw new Error('Coche au moins une pointure disponible.');
+      if (!inventoryBySize || typeof inventoryBySize !== 'object' || Array.isArray(inventoryBySize)) throw new Error('Le stock par pointure est invalide.');
+      for (const size of sizes) {
+        const quantity = Number(inventoryBySize[size]);
+        if (!Number.isInteger(quantity) || quantity < 0 || quantity > 100_000) throw new Error(`Vérifie le nombre de paires en ${size}.`);
+      }
+      const stock = sizes.reduce((total, size) => total + Number(inventoryBySize[size]), 0);
       const purchasePrice = Number(form.get('purchasePrice'));
       if (!Number.isInteger(stock) || stock < 0) throw new Error('Le stock doit être un nombre entier positif.');
       if (!Number.isFinite(purchasePrice) || purchasePrice < 0) throw new Error('Le prix d’achat doit être un montant positif.');
@@ -213,9 +245,7 @@ export default function AdminPanel({ open, onClose, authenticated, onAuthenticat
                     <label>Nom du produit<input name="name" required maxLength={55} defaultValue={editing?.name || ''} /></label>
                     <label>Prix de vente (DH)<input name="price" type="number" min="0" step="0.01" required defaultValue={editing?.price ?? ''} /></label>
                     <label>Prix d’achat (DH)<input name="purchasePrice" type="number" min="0" step="0.01" required defaultValue={editing?.purchasePrice ?? ''} /></label>
-                    <label>Stock total<input name="stock" type="number" min="0" step="1" required defaultValue={editing?.stock ?? 0} /></label>
-                    <label className="wide">Pointures disponibles<input name="sizes" maxLength={120} defaultValue={Array.isArray(editing?.sizes) ? editing.sizes.join(', ') : ''} placeholder="Ex. 36, 37, 38, 39…" /><span className="photo-hint">Sépare chaque pointure par une virgule. Si tu laisses ce champ vide, les pointures 35 à 46 seront proposées.</span></label>
-                    <label className="wide">Stock par taille (facultatif)<textarea name="inventoryBySize" rows="3" defaultValue={editing?.inventoryBySize ? Object.entries(editing.inventoryBySize).map(([size, quantity]) => `${size} : ${quantity}`).join('\n') : ''} placeholder={'36 : 2\n37 : 4\n38 : 1'} /><span className="photo-hint">Une ligne par taille. Si tu renseignes ce tableau, le stock total est calculé automatiquement à partir de ces quantités.</span></label>
+                    <SizeStockPicker key={`sizes-${editingId}`} product={editing} />
                     <label className="wide">Description<input name="description" maxLength={180} defaultValue={editing?.description || ''} /></label>
                     <label>Étiquette<input name="tag" maxLength={28} defaultValue={editing?.tag || 'À découvrir'} /></label>
                     <label>Ajouter des photos<input name="images" type="file" accept="image/png,image/jpeg,image/webp,image/gif" multiple /></label>
