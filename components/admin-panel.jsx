@@ -50,7 +50,7 @@ function SizeStockPicker({ product }) {
   return (
     <div className="wide size-stock-picker">
       <span className="size-stock-label">Pointures et paires disponibles</span>
-      <p className="photo-hint">Coche les pointures à vendre, puis utilise − et + pour indiquer le nombre de paires.</p>
+      <p className="photo-hint">Coche une pointure ou appuie directement sur + pour l’ajouter, puis règle le stock avec − et +.</p>
       <input type="hidden" name="sizes" value={JSON.stringify(selectedSizes)} />
       <input type="hidden" name="inventoryBySize" value={JSON.stringify(inventory)} />
       <div className="size-stock-grid">
@@ -61,7 +61,7 @@ function SizeStockPicker({ product }) {
             <div className="size-quantity" aria-label={`Quantité pour ${size.replace('-', ' à ')}`}>
               <button type="button" onClick={() => changeQuantity(size, -1)} disabled={!selected || !quantities[size]} aria-label={`Retirer une paire en ${size}`}>−</button>
               <output>{selected ? Number(quantities[size] || 0) : '—'}</output>
-              <button type="button" onClick={() => changeQuantity(size, 1)} disabled={!selected} aria-label={`Ajouter une paire en ${size}`}>+</button>
+              <button type="button" onClick={() => { if (!selected) toggleSize(size, true); changeQuantity(size, 1); }} disabled={Number(quantities[size] || 0) >= 100_000} aria-label={`Ajouter une paire en ${size}`}>+</button>
             </div>
           </div>;
         })}
