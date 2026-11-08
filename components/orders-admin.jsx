@@ -172,11 +172,11 @@ export default function OrdersAdmin() {
     try {
       await request('/api/orders', { method: 'PATCH', body: JSON.stringify({ id: order.id, status: 'confirmed' }) });
       setOrders(current => current.map(item => item.id === order.id ? { ...item, status: 'confirmed' } : item));
-      const reference = String(order.id).slice(0, 8).toUpperCase();
-      const items = (order.items || []).map(item => `${item.name}${item.size ? ` · pointure ${item.size}` : ''} × ${item.quantity}`).join(', ');
+      const items = (order.items || []).map(item => `${item.name}${item.size ? ` · القياس ${item.size}` : ''} × ${item.quantity}`).join('، ');
       const trackingUrl = order.tracking_token ? `${window.location.origin}/suivi#${encodeURIComponent(order.tracking_token)}` : '';
-      const trackingLine = trackingUrl ? `\n\nSuivez l’état de votre commande ici : ${trackingUrl}` : '';
-      const message = `Bonjour ${order.customer_name}, nous confirmons votre commande Crooza #${reference} : ${items}. Total à payer à la livraison : ${money(order.total)} (livraison à ${order.city}). Merci de nous envoyer votre adresse complète ou le point relais souhaité pour préparer l’expédition.${trackingLine}`;
+      const trackingLine = trackingUrl ? `\n🔎 تتبع الطلب ديالك: ${trackingUrl}` : '';
+      const total = `${Number(order.total || 0).toLocaleString('fr-FR')} درهم`;
+      const message = `سلام ${order.customer_name} 😊\nكنأكدوا ليك الطلب ديالك من Crooza 🛍️\n👟 ${items}\n💰 المجموع مع التوصيل: ${total}\n📍 المدينة: ${order.city}\nباش نوجدو ليك الإرسال، صيفط لينا العنوان كامل ولا أقرب نقطة تسليم 📦${trackingLine}\nشكراً على الثقة ديالك في Crooza 🤎`;
       const whatsappUrl = `https://wa.me/${String(order.phone).replace(/\D/g, '')}?text=${encodeURIComponent(message)}`;
       if (messageWindow) messageWindow.location.href = whatsappUrl;
       setNotice(messageWindow ? 'Message de confirmation ouvert dans WhatsApp : appuie sur Envoyer.' : 'Commande confirmée. Utilise le lien WhatsApp de la commande pour écrire au client.');
