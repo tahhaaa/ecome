@@ -46,7 +46,7 @@ export default function CheckoutModal({ product, onClose }) {
             <span className="checkout-success-mark">✓</span>
             <p className="eyebrow"><span className="eyebrow-line" /> COMMANDE REÇUE</p>
             <h2 id="checkoutTitle">Merci <em>beaucoup.</em></h2>
-            <p>Votre demande pour <strong>{product.name}</strong>{success.size ? <> en taille <strong>{success.size}</strong></> : null} est bien enregistrée. Nous vous contacterons au numéro indiqué pour confirmer la livraison.</p>
+            <p>Votre demande pour <strong>{product.name}</strong>{success.size ? <> en pointure <strong>{success.size}</strong></> : null} est bien enregistrée. Nous vous contacterons au numéro indiqué pour confirmer la livraison.</p>
             <div className="checkout-total"><span>Total avec livraison</span><strong>{Number(success.total).toLocaleString('fr-FR')} DH</strong></div>
             <a className="button button-dark tracking-button" href={`/suivi#${success.trackingToken || ''}`}>Suivre ma commande <span>↗</span></a>
             <button className="checkout-continue" type="button" onClick={onClose}>Continuer la visite</button>
@@ -60,7 +60,7 @@ export default function CheckoutModal({ product, onClose }) {
               <label>Votre nom complet<input name="name" autoComplete="name" required minLength={2} maxLength={100} placeholder="Ex. Sara El Amrani" /></label>
               <label>Votre téléphone<input name="phone" type="tel" autoComplete="tel" inputMode="tel" required pattern="[+0-9 ()().-]{9,20}" placeholder="06 12 34 56 78" /></label>
               <label>Votre ville<input name="city" autoComplete="address-level2" required minLength={2} maxLength={80} value={city} onChange={event => setCity(event.target.value)} placeholder="Ex. Casablanca, Rabat, Témara…" /></label>
-              {sizes.length > 0 && <label>Choisissez votre taille<select name="size" required value={size} onChange={event => setSize(event.target.value)}><option value="">Sélectionner une taille</option>{sizes.map(option => <option key={option} value={option}>{option}</option>)}</select></label>}
+              {sizes.length > 0 && <label>Choisissez votre pointure<select name="size" required value={size} onChange={event => setSize(event.target.value)}><option value="">Sélectionner une pointure</option>{sizes.map(option => <option key={option} value={option}>{option.replace('-', '–')}</option>)}</select></label>}
               <div className="checkout-summary"><span>Livraison <small>{city.trim() ? `· ${city}` : '· toutes les villes'}</small></span><strong>{shipping} DH</strong><span className="checkout-summary-total">Total à payer à la livraison</span><strong className="checkout-summary-total">{(Number(product.price || 0) + shipping).toLocaleString('fr-FR')} DH</strong></div>
               {error && <p className="checkout-error" role="alert">{error}</p>}
               <button className="button button-dark checkout-submit" type="submit" disabled={busy}>{busy ? 'Envoi de la commande…' : 'Confirmer ma commande'} <span>↗</span></button>

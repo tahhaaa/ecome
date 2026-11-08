@@ -24,7 +24,7 @@ export async function POST(request) {
 
     const shippingFee = shippingFor(city);
     const trackingToken = randomBytes(32).toString('base64url');
-    const createdOrder = await db('rpc/place_shop_order', {
+    const createdOrder = await db('rpc/place_shop_order_with_tracking', {
       method: 'POST',
       body: JSON.stringify({
         p_customer_name: customerName,
@@ -35,6 +35,7 @@ export async function POST(request) {
         p_size: size,
         p_shipping_fee: shippingFee,
         p_tracking_token_hash: createHash('sha256').update(trackingToken).digest('hex'),
+        p_tracking_token: trackingToken,
       }),
     });
     if (!createdOrder?.id) throw new Error('Supabase n’a pas retourné la commande enregistrée.');
