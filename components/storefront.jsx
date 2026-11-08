@@ -24,6 +24,7 @@ export default function Storefront({ initialStore }) {
   const [search, setSearch] = useState('');
   const [tagFilter, setTagFilter] = useState('Tout');
   const [promoOpen, setPromoOpen] = useState(false);
+  const [faqOpen, setFaqOpen] = useState(0);
 
   useEffect(() => {
     function onKeyDown(event) {
@@ -97,7 +98,7 @@ export default function Storefront({ initialStore }) {
           <img src={store.logo || '/images/crooza-mark.png'} alt="" />
           <span>{store.brand || fallback.brand}<small>Chaussures & accessoires</small></span>
         </a>
-        <nav className="buyer-nav" aria-label="Navigation principale"><a href="#collection">Boutique</a><a href="#about">Notre histoire</a></nav>
+        <nav className="buyer-nav" aria-label="Navigation principale"><a href="#collection">Boutique</a><a href="#faq">FAQ</a></nav>
         <button className="buyer-cart-button" type="button" onClick={() => setCartOpen(true)} aria-label={`Ouvrir le panier, ${cartCount} article${cartCount === 1 ? '' : 's'}`}>
           <span>Panier</span><b>{cartCount}</b>
         </button>
@@ -129,9 +130,14 @@ export default function Storefront({ initialStore }) {
           </div>
         </section>
 
-        <section className="buyer-about" id="about">
-          <div><span className="buyer-kicker">À PROPOS DE CROOZA</span><h2>{String(store.aboutTitle || 'Du confort, choisi avec soin.').replaceAll('|', ' ')}</h2><p>{store.aboutTextOne}</p><a href={waIntro} target="_blank" rel="noreferrer">Une question ? Écris-nous sur WhatsApp ↗</a></div>
-          {store.aboutImage && <img src={store.aboutImage} alt="Sélection Crooza" loading="lazy" />}
+        <section className="buyer-faq" id="faq">
+          <div className="buyer-faq-heading"><span className="buyer-kicker">TOUT SIMPLEMENT</span><h2>Questions<br /><em>fréquentes.</em></h2><p>Les infos utiles avant de commander.</p></div>
+          <div className="buyer-faq-list">{[
+            ['Comment choisir ma pointure ?', 'Ouvre le produit et ajoute-le au panier : les pointures encore disponibles apparaissent au moment de la commande.'],
+            ['Comment se passe la livraison ?', 'Nous livrons partout au Maroc. Les frais sont affichés dans le récapitulatif avant de confirmer la commande.'],
+            ['Quand est-ce que je paie ?', 'Le paiement se fait à la livraison. Nous te contactons pour confirmer les informations de ta commande.'],
+            ['Comment suivre ma commande ?', 'Après confirmation, tu peux retrouver son état avec le lien de suivi qui te sera envoyé.'],
+          ].map(([question, answer], index) => <article className={`buyer-faq-item ${faqOpen === index ? 'open' : ''}`} key={question}><button type="button" onClick={() => setFaqOpen(faqOpen === index ? -1 : index)} aria-expanded={faqOpen === index}><span><i>0{index + 1}</i>{question}</span><b>{faqOpen === index ? '−' : '+'}</b></button><div className="buyer-faq-answer"><p>{answer}</p></div></article>)}</div>
         </section>
       </main>
 
