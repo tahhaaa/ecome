@@ -1,3 +1,4 @@
+import { createHash, randomBytes } from 'node:crypto';
 import { db } from '../../../lib/vercel/supabase.js';
 import { hasAdminSession } from '../../../lib/auth.js';
 
@@ -31,6 +32,7 @@ export async function POST(request) {
     if (!Number.isFinite(unitPrice) || unitPrice < 0) return Response.json({ error: 'Prix du produit invalide.' }, { status: 400 });
     const subtotal = unitPrice * quantity;
     const shippingFee = shippingFor(city);
+    const trackingToken = randomBytes(32).toString('base64url');
     const order = {
       customer_name: customerName,
       phone,
@@ -40,6 +42,7 @@ export async function POST(request) {
       shipping_fee: shippingFee,
       total: subtotal + shippingFee,
       status: 'new',
+      tracking_token_hash: createHash('sha256').update(trackingToken).digest('hex'),
     };
     const saved = await db('shop_orders?select=id,created_at,total', {
       method: 'POST', headers: { Prefer: 'return=representation' }, body: JSON.stringify(order),
@@ -52,7 +55,7 @@ export async function POST(request) {
     } catch (error) {
       console.error('Order push failed:', error.message);
     }
-    return Response.json({ ok: true, order: { id: createdOrder.id, total: createdOrder.total, size: size || null } }, { status: 201, headers: { 'Cache-Control': 'no-store' } });
+    return Response.json({ ok: true, order: { id: createdOrder.id, total: createdOrder.total, size: size || null }, trackingToken }, { status: 201, headers: { 'Cache-Control': 'no-store' } });
   } catch (error) {
     console.error('Order save failed:', error.message);
     return Response.json({ error: 'La commande n’a pas pu être enregistrée. Réessayez dans un instant.' }, { status: 503 });

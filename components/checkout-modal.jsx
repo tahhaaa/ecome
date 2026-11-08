@@ -28,7 +28,7 @@ export default function CheckoutModal({ product, onClose }) {
       });
       const result = await response.json().catch(() => ({}));
       if (!response.ok) throw new Error(result.error || 'Commande impossible pour le moment.');
-      setSuccess(result.order);
+      setSuccess({ ...result.order, trackingToken: result.trackingToken });
     } catch (submitError) {
       setError(submitError.message);
     } finally {
@@ -47,7 +47,8 @@ export default function CheckoutModal({ product, onClose }) {
             <h2 id="checkoutTitle">Merci <em>beaucoup.</em></h2>
             <p>Votre demande pour <strong>{product.name}</strong>{success.size ? <> en taille <strong>{success.size}</strong></> : null} est bien enregistrée. Nous vous contacterons au numéro indiqué pour confirmer la livraison.</p>
             <div className="checkout-total"><span>Total avec livraison</span><strong>{Number(success.total).toLocaleString('fr-FR')} DH</strong></div>
-            <button className="button button-dark" type="button" onClick={onClose}>Continuer la visite <span>↗</span></button>
+            <a className="button button-dark tracking-button" href={`/suivi#${success.trackingToken || ''}`}>Suivre ma commande <span>↗</span></a>
+            <button className="checkout-continue" type="button" onClick={onClose}>Continuer la visite</button>
           </div>
         ) : (
           <>

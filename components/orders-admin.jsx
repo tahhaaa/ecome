@@ -37,6 +37,7 @@ export default function OrdersAdmin() {
   const [view, setView] = useState('orders');
   const [analytics, setAnalytics] = useState(null);
   const [analyticsError, setAnalyticsError] = useState('');
+  const [testingPush, setTestingPush] = useState(false);
   const knownOrders = useRef(null);
 
   const refresh = useCallback(async (notifyNew = false) => {
@@ -75,6 +76,11 @@ export default function OrdersAdmin() {
     if (!authenticated) return undefined;
     setLoading(true);
     request('/api/store').then(setShopStore).catch(() => {});
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.getRegistration('/sw.js').then(registration => registration?.pushManager.getSubscription()).then(subscription => {
+        if (subscription) setPushState('enabled');
+      }).catch(() => {});
+    }
     refresh();
     refreshAnalytics();
     const interval = window.setInterval(() => refresh(true), 15000);
@@ -111,7 +117,14 @@ export default function OrdersAdmin() {
       const { key } = await request('/api/push/key');
       if (!key) throw new Error('Les clés push VAPID ne sont pas encore configurées dans Vercel.');
       const registration = await navigator.serviceWorker.register('/sw.js');
-      const subscription = await registration.pushManager.subscribe({ userVisibleOnly: true, applicationServerKey: decodeKey(key) });
+      const applicationServerKey = decodeKey(key);
+      let subscription = await registration.pushManager.getSubscription();
+      if (subscription) {
+        const previousKey = subscription.options.applicationServerKey;
+        const sameKey = previousKey && new Uint8Array(previousKey).every((byte, index) => byte === applicationServerKey[index]) && new Uint8Array(previousKey).length === applicationServerKey.length;
+        if (!sameKey) { await subscription.unsubscribe(); subscription = null; }
+      }
+      if (!subscription) subscription = await registration.pushManager.subscribe({ userVisibleOnly: true, applicationServerKey });
       await request('/api/push/subscribe', { method: 'POST', body: JSON.stringify({ subscription }) });
       setPushState('enabled');
       setNotice('Notifications push activées sur cet appareil.');
@@ -119,6 +132,18 @@ export default function OrdersAdmin() {
       setPushState('idle');
       setError(pushError.message);
     }
+  }
+
+  async function testPush() {
+    setTestingPush(true);
+    setError('');
+    try {
+      const result = await request('/api/push/test', { method: 'POST', body: '{}' });
+      if (!result.ok) throw new Error(result.error || 'Le test push n’a pas abouti.');
+      setNotice(`Notification de test envoyée à ${result.sent} appareil${result.sent === 1 ? '' : 's'}.`);
+      if (result.failed) setError(`${result.failed} appareil(s) n’ont pas accepté la notification. Réactivez-les depuis chaque appareil.`);
+    } catch (pushError) { setError(pushError.message); }
+    finally { setTestingPush(false); }
   }
 
   async function updateStatus(id, status) {
@@ -158,16 +183,16 @@ export default function OrdersAdmin() {
     <main className="admin-page">
       <header className="orders-header">
         <a className="admin-brand" href="/">CROOZA<span>ADMIN</span></a>
-        <div className="orders-header-actions"><button type="button" className="push-enable" onClick={() => setEditorOpen(true)}>Modifier la boutique</button><button type="button" className={`push-enable ${pushState === 'enabled' ? 'is-enabled' : ''}`} onClick={enablePush}>{pushState === 'enabled' ? '✓ Notifications activées' : '♧ Activer les notifications'}</button><a href="/" className="admin-store-link">Voir la boutique ↗</a><button type="button" className="admin-logout-button" onClick={logout}>Déconnexion</button></div>
+        <div className="orders-header-actions"><button type="button" className="push-enable" onClick={() => setEditorOpen(true)}>Modifier la boutique</button><button type="button" className={`push-enable ${pushState === 'enabled' ? 'is-enabled' : ''}`} onClick={enablePush}>{pushState === 'busy' ? 'Activation…' : pushState === 'enabled' ? '✓ Notifications activées' : '♧ Activer les notifications'}</button><button type="button" className="push-enable" onClick={testPush} disabled={testingPush}>{testingPush ? 'Test envoi…' : 'Tester le push'}</button><a href="/" className="admin-store-link">Voir la boutique ↗</a><button type="button" className="admin-logout-button" onClick={logout}>Déconnexion</button></div>
       </header>
       <section className="orders-main">
         <div className="admin-view-tabs" role="tablist" aria-label="Administration"><button type="button" role="tab" aria-selected={view === 'orders'} className={view === 'orders' ? 'active' : ''} onClick={() => setView('orders')}>Commandes {newCount > 0 && <span>{newCount}</span>}</button><button type="button" role="tab" aria-selected={view === 'analytics'} className={view === 'analytics' ? 'active' : ''} onClick={() => setView('analytics')}>Statistiques</button></div>
+        {notice && <div className="orders-toast" role="status">✳ {notice}</div>}
+        {error && <div className="admin-error orders-error" role="alert">{error}</div>}
         {view === 'orders' ? <>
           <div className="orders-title-row"><div><p className="eyebrow"><span className="eyebrow-line" /> VOTRE BOUTIQUE · MAROC</p><h1>Commandes <em>reçues.</em></h1><p>Les nouvelles commandes se synchronisent automatiquement.</p></div><button className="refresh-button" type="button" onClick={() => refresh()} disabled={loading}>↻ Actualiser</button></div>
           <div className="orders-stats"><div><span>À traiter</span><strong>{newCount}</strong></div><div><span>Toutes les commandes</span><strong>{orders.length}</strong></div><div><span>Chiffre confirmé</span><strong>{money(orders.filter(order => !['cancelled'].includes(order.status)).reduce((sum, order) => sum + Number(order.total || 0), 0))}</strong></div></div>
           <div className="orders-toolbar"><div className="orders-filters"><button className={filter === 'all' ? 'active' : ''} onClick={() => setFilter('all')}>Toutes ({orders.length})</button><button className={filter === 'new' ? 'active' : ''} onClick={() => setFilter('new')}>Nouvelles ({newCount})</button><button className={filter === 'confirmed' ? 'active' : ''} onClick={() => setFilter('confirmed')}>Confirmées</button><button className={filter === 'shipped' ? 'active' : ''} onClick={() => setFilter('shipped')}>Expédiées</button></div><span className="sync-indicator"><i /> Actualisation automatique · 15 s</span></div>
-          {notice && <div className="orders-toast" role="status">✳ {notice}</div>}
-          {error && <div className="admin-error orders-error" role="alert">{error}</div>}
           {visibleOrders.length ? <div className="orders-list">{visibleOrders.map(order => (
           <article className="order-card" key={order.id}>
             <div className="order-card-top"><div><span className="order-number">COMMANDE · {String(order.id).slice(0, 8).toUpperCase()}</span><time>{date(order.created_at)}</time></div><span className={`order-status status-${order.status}`}>{statusLabels[order.status] || order.status}</span></div>

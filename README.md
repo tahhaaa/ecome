@@ -16,7 +16,7 @@ Ouvrez <http://localhost:3000>.
 ## Configurer Supabase
 
 1. Créez un projet Supabase.
-2. Dans **SQL Editor**, exécutez les migrations dans l’ordre : `0001_init.sql`, `0002_orders_and_push.sql`, puis `0003_analytics.sql` pour activer les statistiques anonymes.
+2. Dans **SQL Editor**, exécutez les migrations dans l’ordre : `0001_init.sql`, `0002_orders_and_push.sql`, `0003_analytics.sql` pour les statistiques, puis `0004_order_tracking.sql` pour les liens privés de suivi.
 3. Copiez l’URL du projet et la clé **Secret** (`sb_secret_…`) depuis **Project Settings → API Keys**. Cette clé contourne les règles RLS : elle doit rester dans les variables d’environnement, jamais dans un composant client. L’ancienne clé `service_role` reste acceptée comme solution de compatibilité.
 
 ## Déployer sur Vercel
