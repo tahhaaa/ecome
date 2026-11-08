@@ -15,24 +15,31 @@ export async function POST(request) {
     const customerName = String(body.name || '').trim().slice(0, 100);
     const phone = String(body.phone || '').replace(/[\s().-]/g, '').slice(0, 20);
     const city = String(body.city || '').trim().slice(0, 80);
-    const productId = String(body.productId || '').slice(0, 100);
-    const size = String(body.size || '').trim().slice(0, 30);
-    const quantity = Number.parseInt(body.quantity, 10);
-    if (customerName.length < 2 || !/^\+?\d{9,15}$/.test(phone) || city.length < 2 || !productId || !Number.isInteger(quantity) || quantity < 1 || quantity > 10) {
+    const items = Array.isArray(body.items) ? body.items : body.productId ? [{ productId: body.productId, quantity: body.quantity, size: body.size }] : [];
+    if (customerName.length < 2 || !/^\+?\d{9,15}$/.test(phone) || city.length < 2 || items.length < 1 || items.length > 10) {
       return Response.json({ error: 'Vérifiez le nom, le téléphone, la ville et la quantité.' }, { status: 400 });
     }
+    const orderItems = [];
+    for (const item of items) {
+      const productId = String(item.productId || '').slice(0, 100);
+      const size = String(item.size || '').trim().slice(0, 30);
+      const quantity = Number.parseInt(item.quantity, 10);
+      if (!productId || !Number.isInteger(quantity) || quantity < 1 || quantity > 10) return Response.json({ error: 'Vérifiez les produits et leurs quantités.' }, { status: 400 });
+      const existing = orderItems.find(entry => entry.productId === productId && entry.size === (size || null));
+      if (existing) existing.quantity += quantity;
+      else orderItems.push({ productId, quantity, size: size || null });
+    }
+    if (orderItems.some(item => item.quantity > 10)) return Response.json({ error: 'La quantité maximale par article est de 10.' }, { status: 400 });
 
     const shippingFee = shippingFor(city);
     const trackingToken = randomBytes(32).toString('base64url');
-    const createdOrder = await db('rpc/place_shop_order_with_tracking', {
+    const createdOrder = await db('rpc/place_shop_cart_order_with_tracking', {
       method: 'POST',
       body: JSON.stringify({
         p_customer_name: customerName,
         p_phone: phone,
         p_city: city,
-        p_product_id: productId,
-        p_quantity: quantity,
-        p_size: size,
+        p_items: orderItems,
         p_shipping_fee: shippingFee,
         p_tracking_token_hash: createHash('sha256').update(trackingToken).digest('hex'),
         p_tracking_token: trackingToken,
@@ -41,16 +48,19 @@ export async function POST(request) {
     if (!createdOrder?.id) throw new Error('Supabase n’a pas retourné la commande enregistrée.');
 
     try {
-      await sendOrderPush(createdOrder, customerName, `${createdOrder.product_name}${size ? ` · taille ${size}` : ''}`);
+      await sendOrderPush(createdOrder, customerName, `${createdOrder.product_name}${createdOrder.free_quantity ? ` · cadeau : ${createdOrder.free_product_name}` : ''}`);
     } catch (error) {
       console.error('Order push failed:', error.message);
     }
-    return Response.json({ ok: true, order: { id: createdOrder.id, total: createdOrder.total, subtotal: createdOrder.subtotal, shipping_fee: createdOrder.shipping_fee, free_quantity: createdOrder.free_quantity || 0, size: size || null }, trackingToken }, { status: 201, headers: { 'Cache-Control': 'no-store' } });
+    return Response.json({ ok: true, order: { id: createdOrder.id, total: createdOrder.total, subtotal: createdOrder.subtotal, shipping_fee: createdOrder.shipping_fee, free_quantity: createdOrder.free_quantity || 0, free_product_name: createdOrder.free_product_name || null }, trackingToken }, { status: 201, headers: { 'Cache-Control': 'no-store' } });
   } catch (error) {
     console.error('Order save failed:', error.message);
     const message = error.message || '';
     if (message.includes('SIZE_OUT_OF_STOCK')) return Response.json({ error: 'Cette taille vient d’être épuisée. Choisissez une autre taille.' }, { status: 409 });
+    if (message.includes('PROMOTION_GIFT_OUT_OF_STOCK')) return Response.json({ error: 'Le cadeau de cette offre vient d’être épuisé. La boutique va remettre le stock à jour.' }, { status: 409 });
     if (message.includes('OUT_OF_STOCK')) return Response.json({ error: 'Ce produit est épuisé.' }, { status: 409 });
+    if (message.includes('PROMOTION_GIFT_INVALID') || message.includes('PROMOTION_CONFIGURATION_INVALID')) return Response.json({ error: 'Cette offre cadeau doit être vérifiée par la boutique avant la commande.' }, { status: 409 });
+    if (message.includes('CART_INVALID') || message.includes('QUANTITY_INVALID')) return Response.json({ error: 'Vérifiez les articles et les quantités de votre panier.' }, { status: 400 });
     if (message.includes('SIZE_NOT_AVAILABLE') || message.includes('PRODUCT_ONE_SIZE')) return Response.json({ error: 'Cette taille n’est pas disponible pour ce produit.' }, { status: 409 });
     if (message.includes('PRODUCT_NOT_FOUND')) return Response.json({ error: 'Ce produit n’est plus disponible.' }, { status: 404 });
     if (message.includes('place_shop_order') || message.includes('shop_orders') || message.includes('P0001')) {
