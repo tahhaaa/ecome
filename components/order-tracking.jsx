@@ -1,6 +1,7 @@
 'use client';
 
 import { useCallback, useEffect, useState } from 'react';
+import Link from 'next/link';
 
 const steps = [
   { id: 'new', title: 'Commande reçue', description: 'Votre demande est bien arrivée chez Crooza.' },
@@ -30,9 +31,9 @@ export default function OrderTracking() {
   }, [token]);
 
   useEffect(() => {
-    refresh();
+    const initialLoad = window.setTimeout(refresh, 0);
     const interval = window.setInterval(refresh, 30000);
-    return () => window.clearInterval(interval);
+    return () => { window.clearTimeout(initialLoad); window.clearInterval(interval); };
   }, [refresh]);
 
   const currentStep = steps.findIndex(step => step.id === order?.status);
@@ -40,7 +41,7 @@ export default function OrderTracking() {
 
   return (
     <main className="tracking-page">
-      <header className="tracking-header"><a href="/" className="tracking-brand">CROOZA<span>VOTRE BOUTIQUE</span></a><a href="/" className="tracking-shop-link">Retour à la boutique ↗</a></header>
+      <header className="tracking-header"><Link href="/" className="tracking-brand">CROOZA<span>VOTRE BOUTIQUE</span></Link><Link href="/" className="tracking-shop-link">Retour à la boutique ↗</Link></header>
       <section className="tracking-card">
         <p className="eyebrow"><span className="eyebrow-line" /> ESPACE DE SUIVI PERSONNEL</p>
         <h1>Votre commande,<br /><em>en toute tranquillité.</em></h1>

@@ -68,7 +68,7 @@ export default function Storefront({ initialStore }) {
             <a className="button button-dark" href="#collection">Explorer la collection <span>↘</span></a>
             <div className="hero-note"><span className="note-star">✳</span><span>Petites séries, grandes histoires.<br /><b>Choisies avec amour.</b></span></div>
           </div>
-          <div className="hero-visual"><div className="hero-frame"><img src={store.heroImage} alt="Intérieur chaleureux aux objets choisis" /><span className="image-caption">La beauté des choses simples</span></div><div className="hero-sticker"><span>NEW<br />SEASON</span><b>✳</b></div><span className="hero-side-note">Objets choisis · Maroc</span></div>
+          <div className="hero-visual"><div className="hero-frame"><img src={store.heroImage} alt="Intérieur chaleureux aux objets choisis" fetchPriority="high" decoding="async" /><span className="image-caption">La beauté des choses simples</span></div><div className="hero-sticker"><span>NEW<br />SEASON</span><b>✳</b></div><span className="hero-side-note">Objets choisis · Maroc</span></div>
           <div className="hero-index">01 <span>—</span> 03</div>
         </section>
 
@@ -77,9 +77,9 @@ export default function Storefront({ initialStore }) {
         <section className="collection section-wrap" id="collection">
           <div className="section-heading"><div><p className="eyebrow"><span className="eyebrow-line" /> À découvrir</p><h2>{collectionTitle[0]} <em>{collectionTitle.slice(1).join(' ')}</em></h2></div><p className="section-aside">{lines(store.collectionNote)}</p></div>
           <div className="product-grid">
-            {store.products.length ? store.products.map((product, index) => (
-              <article className="product-card" style={{ animationDelay: `${index * 90}ms` }} key={product.id}>
-                <button className="product-image" type="button" onClick={() => showProduct(product)} aria-label={`Voir le détail de ${product.name}`}><img src={product.image} alt={product.name} loading="lazy" /><span className="product-tag">{product.inStock === false ? 'Épuisé' : product.tag || 'À découvrir'}</span><span className="product-heart">✳</span></button>
+            {store.products.length ? store.products.map(product => (
+              <article className="product-card" key={product.id}>
+                <button className="product-image" type="button" onClick={() => showProduct(product)} aria-label={`Voir le détail de ${product.name}`}><img src={product.image} alt={product.name} loading="lazy" decoding="async" /><span className="product-tag">{product.inStock === false ? 'Épuisé' : product.tag || 'À découvrir'}</span><span className="product-heart">✳</span></button>
                 <div className="product-info"><div><button className="product-title-button" type="button" onClick={() => showProduct(product)}>{product.name}</button><p>{product.description}</p>{product.sizes?.length > 0 && <p className="product-sizes">Tailles : {product.sizes.join(' · ')}</p>}</div><span className="product-price">{Number(product.price || 0).toLocaleString('fr-FR')} DH</span></div>
                 <button className="product-details-link" type="button" onClick={() => showProduct(product)}>Voir le produit <span>↗</span></button>
                 <button className="product-order" type="button" onClick={() => startOrder(product)} disabled={product.inStock === false}>{product.inStock === false ? 'Indisponible' : 'Commander'} <span>↗</span></button>

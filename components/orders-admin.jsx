@@ -1,6 +1,7 @@
 'use client';
 
 import { useCallback, useEffect, useRef, useState } from 'react';
+import Link from 'next/link';
 import AdminPanel from './admin-panel.jsx';
 import OrderFinance from './order-finance.jsx';
 
@@ -34,7 +35,7 @@ export default function OrdersAdmin() {
   const [password, setPassword] = useState('');
   const [loginError, setLoginError] = useState('');
   const [orders, setOrders] = useState([]);
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [notice, setNotice] = useState('');
   const [filter, setFilter] = useState('all');
@@ -81,18 +82,16 @@ export default function OrdersAdmin() {
 
   useEffect(() => {
     if (!authenticated) return undefined;
-    setLoading(true);
     request('/api/admin/store').then(setShopStore).catch(() => {});
     if ('serviceWorker' in navigator) {
       navigator.serviceWorker.getRegistration('/sw.js').then(registration => registration?.pushManager.getSubscription()).then(subscription => {
         if (subscription) setPushState('enabled');
       }).catch(() => {});
     }
-    refresh();
-    refreshAnalytics();
+    const initialRefresh = window.setTimeout(() => { refresh(); refreshAnalytics(); }, 0);
     const interval = window.setInterval(() => refresh(true), 15000);
     const analyticsInterval = window.setInterval(refreshAnalytics, 30000);
-    return () => { window.clearInterval(interval); window.clearInterval(analyticsInterval); };
+    return () => { window.clearTimeout(initialRefresh); window.clearInterval(interval); window.clearInterval(analyticsInterval); };
   }, [authenticated, refresh, refreshAnalytics]);
 
   useEffect(() => {
@@ -194,7 +193,7 @@ export default function OrdersAdmin() {
 
   if (!authenticated) return (
     <main className="admin-page admin-login-page">
-      <a className="admin-brand" href="/">CROOZA<span>ADMIN</span></a>
+      <Link className="admin-brand" href="/">CROOZA<span>ADMIN</span></Link>
       <form className="admin-login-card" onSubmit={login}>
         <p className="eyebrow"><span className="eyebrow-line" /> ESPACE PRIVÉ</p>
         <h1>Connexion <em>admin.</em></h1>
@@ -202,7 +201,7 @@ export default function OrdersAdmin() {
         <label>Mot de passe administrateur<input type="password" autoComplete="current-password" required value={password} onChange={event => setPassword(event.target.value)} /></label>
         {loginError && <p className="admin-error" role="alert">{loginError}</p>}
         <button className="button button-dark" type="submit">Se connecter <span>↗</span></button>
-        <a className="admin-back" href="/">← Retour à la boutique</a>
+        <Link className="admin-back" href="/">← Retour à la boutique</Link>
       </form>
     </main>
   );
@@ -210,8 +209,8 @@ export default function OrdersAdmin() {
   return (
     <main className="admin-page">
       <header className="orders-header">
-        <a className="admin-brand" href="/">CROOZA<span>ADMIN</span></a>
-        <div className="orders-header-actions"><button type="button" className="push-enable" onClick={() => setEditorOpen(true)}>Modifier la boutique</button><button type="button" className={`push-enable ${pushState === 'enabled' ? 'is-enabled' : ''}`} onClick={enablePush}>{pushState === 'busy' ? 'Activation…' : pushState === 'enabled' ? '✓ Notifications activées' : '♧ Activer les notifications'}</button><button type="button" className="push-enable" onClick={testPush} disabled={testingPush}>{testingPush ? 'Test envoi…' : 'Tester le push'}</button><a href="/" className="admin-store-link">Voir la boutique ↗</a><button type="button" className="admin-logout-button" onClick={logout}>Déconnexion</button></div>
+        <Link className="admin-brand" href="/">CROOZA<span>ADMIN</span></Link>
+        <div className="orders-header-actions"><button type="button" className="push-enable" onClick={() => setEditorOpen(true)}>Modifier la boutique</button><button type="button" className={`push-enable ${pushState === 'enabled' ? 'is-enabled' : ''}`} onClick={enablePush}>{pushState === 'busy' ? 'Activation…' : pushState === 'enabled' ? '✓ Notifications activées' : '♧ Activer les notifications'}</button><button type="button" className="push-enable" onClick={testPush} disabled={testingPush}>{testingPush ? 'Test envoi…' : 'Tester le push'}</button><Link href="/" className="admin-store-link">Voir la boutique ↗</Link><button type="button" className="admin-logout-button" onClick={logout}>Déconnexion</button></div>
       </header>
       <section className="orders-main">
         <div className="admin-view-tabs" role="tablist" aria-label="Administration"><button type="button" role="tab" aria-selected={view === 'orders'} className={view === 'orders' ? 'active' : ''} onClick={() => setView('orders')}>Commandes {newCount > 0 && <span>{newCount}</span>}</button><button type="button" role="tab" aria-selected={view === 'analytics'} className={view === 'analytics' ? 'active' : ''} onClick={() => setView('analytics')}>Statistiques</button></div>

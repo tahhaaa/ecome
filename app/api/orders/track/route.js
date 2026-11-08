@@ -12,7 +12,7 @@ export async function POST(request) {
     const rows = await db(`shop_orders?select=id,customer_name,city,items,subtotal,shipping_fee,total,status,created_at,updated_at&tracking_token_hash=eq.${tokenHash}&deleted_at=is.null&limit=1`);
     if (!rows?.length) return Response.json({ error: 'Commande introuvable. Vérifiez votre lien de suivi.' }, { status: 404 });
     const { order } = { order: rows[0] };
-    return Response.json({ order: { ...order, items: (order.items || []).map(({ purchase_price, ...item }) => item) } }, { headers: { 'Cache-Control': 'no-store' } });
+    return Response.json({ order: { ...order, items: (order.items || []).map(item => { const publicItem = { ...item }; delete publicItem.purchase_price; return publicItem; }) } }, { headers: { 'Cache-Control': 'no-store' } });
   } catch (error) {
     console.error('Order tracking failed:', error.message);
     return Response.json({ error: 'Le suivi est temporairement indisponible.' }, { status: 503 });

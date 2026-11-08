@@ -397,6 +397,13 @@ button:focus-visible,a:focus-visible,input:focus-visible,textarea:focus-visible,
   .main-nav a::after,.product-card,.analytics-bar-space i{transition:none}
 }
 
+/* Keep long product lists responsive by deferring off-screen card painting. */
+.product-card{animation:none;content-visibility:auto;contain-intrinsic-size:auto 470px}
+@media(prefers-reduced-motion:reduce){
+  html{scroll-behavior:auto}
+  *,*::before,*::after{animation-duration:.01ms!important;animation-iteration-count:1!important;scroll-behavior:auto!important;transition-duration:.01ms!important}
+}
+
 /* Inventory, order costs and deletion controls */
 .orders-stats{grid-template-columns:repeat(4,minmax(0,1fr))}
 .order-card-content{grid-template-columns:minmax(135px,.7fr) minmax(180px,1fr) minmax(145px,.65fr) minmax(205px,1fr);gap:18px}
