@@ -1,0 +1,18 @@
+{
+  "name": "Crooza Admin",
+  "short_name": "Crooza Admin",
+  "description": "Espace privé d’administration de la boutique Crooza.",
+  "start_url": "/admin",
+  "scope": "/admin",
+  "display": "standalone",
+  "background_color": "#f7f5ef",
+  "theme_color": "#292b26",
+  "icons": [
+    {
+      "src": "/admin-icon.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    }
+  ]
+}
