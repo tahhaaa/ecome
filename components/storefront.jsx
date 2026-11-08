@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import CheckoutModal from './checkout-modal.jsx';
+import { trackProductView } from './analytics-tracker.jsx';
 
 const phone = '212622222430';
 const fallback = {
@@ -34,8 +35,14 @@ export default function Storefront({ initialStore }) {
   }, [selected]);
 
   function showProduct(product) {
+    trackProductView(product.id);
     setSelected(product);
     setPhotoIndex(0);
+  }
+
+  function startOrder(product) {
+    trackProductView(product.id);
+    setOrderProduct(product);
   }
 
   const gallery = selected?.photos?.length ? selected.photos : selected?.image ? [selected.image] : [];
@@ -75,7 +82,7 @@ export default function Storefront({ initialStore }) {
                 <button className="product-image" type="button" onClick={() => showProduct(product)} aria-label={`Voir le détail de ${product.name}`}><img src={product.image} alt={product.name} loading="lazy" /><span className="product-tag">{product.tag || 'À découvrir'}</span><span className="product-heart">✳</span></button>
                 <div className="product-info"><div><button className="product-title-button" type="button" onClick={() => showProduct(product)}>{product.name}</button><p>{product.description}</p></div><span className="product-price">{Number(product.price || 0).toLocaleString('fr-FR')} DH</span></div>
                 <button className="product-details-link" type="button" onClick={() => showProduct(product)}>Voir le produit <span>↗</span></button>
-                <button className="product-order" type="button" onClick={() => setOrderProduct(product)}>Commander <span>↗</span></button>
+                <button className="product-order" type="button" onClick={() => startOrder(product)}>Commander <span>↗</span></button>
               </article>
             )) : <p className="empty-products">La prochaine belle trouvaille arrive bientôt.</p>}
           </div>
