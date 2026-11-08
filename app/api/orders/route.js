@@ -75,7 +75,7 @@ export async function PATCH(request) {
   try {
     const body = await request.json();
     const { id, status } = body;
-    if (!id || (status === undefined && body.delivery_expenses === undefined)) return Response.json({ error: 'Modification invalide.' }, { status: 400 });
+    if (!id || (status === undefined && body.delivery_expenses === undefined && body.delivery_address === undefined)) return Response.json({ error: 'Modification invalide.' }, { status: 400 });
     const updates = {};
     if (status !== undefined) {
       if (!['new', 'confirmed', 'shipped', 'completed', 'cancelled'].includes(status)) return Response.json({ error: 'Statut de commande invalide.' }, { status: 400 });
@@ -92,7 +92,11 @@ export async function PATCH(request) {
       }
       updates.delivery_expenses = cleanExpenses;
     }
-    const rows = await db(`shop_orders?id=eq.${encodeURIComponent(String(id))}&deleted_at=is.null&select=id,status,delivery_expenses`, {
+    if (body.delivery_address !== undefined) {
+      if (typeof body.delivery_address !== 'string' || body.delivery_address.trim().length > 500) return Response.json({ error: 'Adresse de livraison invalide (500 caractères maximum).' }, { status: 400 });
+      updates.delivery_address = body.delivery_address.trim();
+    }
+    const rows = await db(`shop_orders?id=eq.${encodeURIComponent(String(id))}&deleted_at=is.null&select=id,status,delivery_expenses,delivery_address`, {
       method: 'PATCH', headers: { Prefer: 'return=representation' }, body: JSON.stringify({ ...updates, updated_at: new Date().toISOString() }),
     });
     if (!rows?.length) return Response.json({ error: 'Commande introuvable.' }, { status: 404 });

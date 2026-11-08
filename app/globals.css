@@ -399,6 +399,39 @@ button:focus-visible,a:focus-visible,input:focus-visible,textarea:focus-visible,
 
 /* Keep long product lists responsive by deferring off-screen card painting. */
 .product-card{animation:none;content-visibility:auto;contain-intrinsic-size:auto 470px}
+.order-confirm-button,.order-label-button{max-width:230px;padding:9px 10px;border:0;background:#292b26;color:#fff;font:500 9px var(--sans);text-align:left;cursor:pointer}
+.order-label-button{background:#eee8dc;color:#292b26}
+.order-confirm-button:disabled{opacity:.55;cursor:wait}
+.shipping-label-overlay{position:fixed;z-index:100;inset:0;display:grid;place-items:center;padding:20px;background:#17191499;overflow:auto}
+.shipping-label-dialog{width:min(620px,100%);max-height:94vh;overflow:auto;padding:24px;background:var(--paper);box-shadow:0 24px 80px #15161155}
+.shipping-label-actions{display:flex;justify-content:space-between;gap:10px;margin-bottom:18px}
+.shipping-label-actions button{min-height:40px;padding:0 14px;border:1px solid var(--line);background:#fffefa;color:var(--ink);font:500 11px var(--sans);cursor:pointer}
+.shipping-label-actions button:last-child{background:var(--ink);border-color:var(--ink);color:#fff}
+.shipping-label-actions button:disabled{opacity:.55}
+.shipping-address-field{display:grid;gap:7px;font-size:10px;color:var(--muted)}
+.shipping-address-field input{height:42px;padding:0 11px;border:1px solid var(--line);background:#fffefa;font:12px var(--sans);color:var(--ink)}
+.shipping-label-hint{font-size:10px;line-height:1.6;color:var(--muted)}
+.shipping-label-print{margin-top:18px;padding:24px;border:1px solid #292b26;background:white;color:#171914}
+.shipping-label-print header{display:flex;justify-content:space-between;align-items:center;padding-bottom:14px;border-bottom:2px solid #171914}
+.shipping-label-print header strong{font:700 23px var(--sans);letter-spacing:.12em}
+.shipping-label-print header span,.shipping-label-reference,.shipping-label-print section small{font:700 9px var(--sans);letter-spacing:.12em}
+.shipping-label-reference{padding:12px 0;border-bottom:1px solid #999}
+.shipping-label-print section{padding:14px 0;border-bottom:1px solid #bbb}
+.shipping-label-print section h2{margin:6px 0;font:600 22px var(--sans);letter-spacing:0}
+.shipping-label-print section p{margin:4px 0;font:12px/1.5 var(--sans)}
+.shipping-label-print .shipping-label-item{font-size:11px}
+.shipping-label-print footer{display:grid;grid-template-columns:1fr 1fr;gap:12px;padding:14px 0}
+.shipping-label-print footer span{display:grid;gap:7px;font:700 9px var(--sans);letter-spacing:.06em}
+.shipping-label-print footer strong{font:700 20px var(--sans)}
+.shipping-label-note{padding-top:10px;border-top:1px dashed #999;font:9px var(--sans);color:#555}
+@media print{
+  body *{visibility:hidden!important}
+  .shipping-label-overlay,.shipping-label-overlay *{visibility:visible!important}
+  .shipping-label-overlay{position:absolute;inset:0;display:block;padding:0;background:white;overflow:visible}
+  .shipping-label-dialog{width:100%;max-height:none;overflow:visible;padding:0;box-shadow:none}
+  .shipping-label-actions,.shipping-address-field,.shipping-label-hint{display:none!important}
+  .shipping-label-print{margin:0;padding:10mm;border:1px solid #222;break-inside:avoid}
+}
 @media(prefers-reduced-motion:reduce){
   html{scroll-behavior:auto}
   *,*::before,*::after{animation-duration:.01ms!important;animation-iteration-count:1!important;scroll-behavior:auto!important;transition-duration:.01ms!important}

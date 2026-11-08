@@ -13,7 +13,8 @@ export default function CheckoutModal({ product, onClose }) {
   const [error, setError] = useState('');
   const [success, setSuccess] = useState(null);
   const [size, setSize] = useState('');
-  const sizes = Array.isArray(product.sizes) ? product.sizes.filter(Boolean) : [];
+  const configuredSizes = Array.isArray(product.sizes) ? product.sizes.filter(Boolean) : [];
+  const sizes = configuredSizes.length ? configuredSizes : Array.from({ length: 12 }, (_, index) => String(index + 35));
   const shipping = useMemo(() => deliveryPrice(city), [city]);
 
   async function submit(event) {

@@ -46,6 +46,10 @@ export default function OrdersAdmin() {
   const [analytics, setAnalytics] = useState(null);
   const [analyticsError, setAnalyticsError] = useState('');
   const [testingPush, setTestingPush] = useState(false);
+  const [confirmingOrderId, setConfirmingOrderId] = useState(null);
+  const [labelOrder, setLabelOrder] = useState(null);
+  const [labelAddress, setLabelAddress] = useState('');
+  const [savingLabel, setSavingLabel] = useState(false);
   const knownOrders = useRef(null);
 
   const refresh = useCallback(async (notifyNew = false) => {
@@ -153,10 +157,47 @@ export default function OrdersAdmin() {
   }
 
   async function updateStatus(id, status) {
+    const order = orders.find(item => item.id === id);
+    if (status === 'confirmed' && order && order.status !== 'confirmed') return confirmOrder(order);
     try {
       await request('/api/orders', { method: 'PATCH', body: JSON.stringify({ id, status }) });
       setOrders(current => current.map(order => order.id === id ? { ...order, status } : order));
     } catch (updateError) { setError(updateError.message); }
+  }
+
+  async function confirmOrder(order) {
+    const messageWindow = window.open('about:blank', '_blank');
+    setConfirmingOrderId(order.id);
+    setError('');
+    try {
+      await request('/api/orders', { method: 'PATCH', body: JSON.stringify({ id: order.id, status: 'confirmed' }) });
+      setOrders(current => current.map(item => item.id === order.id ? { ...item, status: 'confirmed' } : item));
+      const reference = String(order.id).slice(0, 8).toUpperCase();
+      const items = (order.items || []).map(item => `${item.name}${item.size ? ` · pointure ${item.size}` : ''} × ${item.quantity}`).join(', ');
+      const message = `Bonjour ${order.customer_name}, nous confirmons votre commande Crooza #${reference} : ${items}. Total à payer à la livraison : ${money(order.total)} (livraison à ${order.city}). Merci de nous envoyer votre adresse complète ou le point relais souhaité pour préparer l’expédition.`;
+      const whatsappUrl = `https://wa.me/${String(order.phone).replace(/\D/g, '')}?text=${encodeURIComponent(message)}`;
+      if (messageWindow) messageWindow.location.href = whatsappUrl;
+      setNotice(messageWindow ? 'Message de confirmation ouvert dans WhatsApp : appuie sur Envoyer.' : 'Commande confirmée. Utilise le lien WhatsApp de la commande pour écrire au client.');
+    } catch (confirmError) {
+      messageWindow?.close();
+      setError(confirmError.message);
+    } finally {
+      setConfirmingOrderId(null);
+    }
+  }
+
+  async function printShippingLabel() {
+    if (!labelOrder || !labelAddress.trim()) { setError('Saisis l’adresse ou le point relais avant de créer l’étiquette.'); return; }
+    setSavingLabel(true);
+    setError('');
+    try {
+      const result = await request('/api/orders', { method: 'PATCH', body: JSON.stringify({ id: labelOrder.id, delivery_address: labelAddress.trim() }) });
+      const updatedOrder = { ...labelOrder, delivery_address: result.order.delivery_address };
+      setLabelOrder(updatedOrder);
+      setOrders(current => current.map(order => order.id === updatedOrder.id ? { ...order, delivery_address: updatedOrder.delivery_address } : order));
+      window.setTimeout(() => window.print(), 100);
+    } catch (saveError) { setError(saveError.message); }
+    finally { setSavingLabel(false); }
   }
 
   async function saveDeliveryExpenses(id, delivery_expenses) {
@@ -223,7 +264,7 @@ export default function OrdersAdmin() {
           {visibleOrders.length ? <div className="orders-list">{visibleOrders.map(order => (
           <article className="order-card" key={order.id}>
             <div className="order-card-top"><div><span className="order-number">COMMANDE · {String(order.id).slice(0, 8).toUpperCase()}</span><time>{date(order.created_at)}</time></div><span className={`order-status status-${order.status}`}>{statusLabels[order.status] || order.status}</span></div>
-            <div className="order-card-content"><div className="order-customer"><strong>{order.customer_name}</strong><a href={`tel:${order.phone}`}>{order.phone} ↗</a><span>{order.city}</span><a className="order-whatsapp" href={`https://wa.me/${String(order.phone).replace(/\D/g, '')}?text=${encodeURIComponent(`Bonjour ${order.customer_name}, nous confirmons votre commande Crooza.`)}`} target="_blank" rel="noreferrer">Contacter sur WhatsApp ↗</a></div><div className="order-items">{(order.items || []).map(item => <div className="order-item" key={item.id}><img src={item.image || '/images/crooza-mark.png'} alt="" /><span>{item.name} <small>× {item.quantity}{item.size ? ` · taille ${item.size}` : ''}</small></span><strong>{money(item.unit_price * item.quantity)}</strong></div>)}</div><div className="order-costs"><span>Sous-total<strong>{money(order.subtotal)}</strong></span><span>Livraison payée<strong>{money(order.shipping_fee)}</strong></span><label>Statut<select value={order.status} onChange={event => updateStatus(order.id, event.target.value)} aria-label={`Statut de la commande ${String(order.id).slice(0, 8)}`}>{statusOptions.map(status => <option value={status} key={status}>{statusLabels[status]}</option>)}</select></label></div><OrderFinance order={order} onSaveExpenses={saveDeliveryExpenses} onDelete={deleteOrder} /></div>
+            <div className="order-card-content"><div className="order-customer"><strong>{order.customer_name}</strong><a href={`tel:${order.phone}`}>{order.phone} ↗</a><span>{order.city}</span><a className="order-whatsapp" href={`https://wa.me/${String(order.phone).replace(/\D/g, '')}?text=${encodeURIComponent(`Bonjour ${order.customer_name}, nous confirmons votre commande Crooza. Merci de nous envoyer votre adresse complète ou le point relais souhaité.`)}`} target="_blank" rel="noreferrer">Contacter sur WhatsApp ↗</a>{order.status === 'new' && <button className="order-confirm-button" type="button" onClick={() => confirmOrder(order)} disabled={confirmingOrderId === order.id}>{confirmingOrderId === order.id ? 'Confirmation…' : 'Confirmer + message WhatsApp ↗'}</button>}{order.status === 'confirmed' && <button className="order-label-button" type="button" onClick={() => { setLabelOrder(order); setLabelAddress(order.delivery_address || ''); }}>Préparer l’étiquette d’envoi ↗</button>}</div><div className="order-items">{(order.items || []).map(item => <div className="order-item" key={item.id}><img src={item.image || '/images/crooza-mark.png'} alt="" /><span>{item.name} <small>× {item.quantity}{item.size ? ` · pointure ${item.size}` : ''}</small></span><strong>{money(item.unit_price * item.quantity)}</strong></div>)}</div><div className="order-costs"><span>Sous-total<strong>{money(order.subtotal)}</strong></span><span>Livraison payée<strong>{money(order.shipping_fee)}</strong></span><label>Statut<select value={order.status} onChange={event => updateStatus(order.id, event.target.value)} aria-label={`Statut de la commande ${String(order.id).slice(0, 8)}`}>{statusOptions.map(status => <option value={status} key={status}>{statusLabels[status]}</option>)}</select></label></div><OrderFinance order={order} onSaveExpenses={saveDeliveryExpenses} onDelete={deleteOrder} /></div>
           </article>
           ))}</div> : <div className="orders-empty"><span>✳</span><h2>{loading ? 'Chargement…' : filter === 'all' ? 'Aucune commande pour le moment.' : 'Aucune commande dans ce filtre.'}</h2><p>Les commandes passées sur votre boutique apparaîtront ici.</p></div>}
         </> : <div className="analytics-view">
@@ -235,6 +276,7 @@ export default function OrdersAdmin() {
         </div>}
       </section>
       {shopStore && <AdminPanel open={editorOpen} onClose={() => setEditorOpen(false)} authenticated onAuthenticated={setAuthenticated} store={shopStore} saveStore={saveShopStore} notify={setNotice} />}
+      {labelOrder && <div className="shipping-label-overlay" role="dialog" aria-modal="true" aria-labelledby="shippingLabelTitle"><section className="shipping-label-dialog"><div className="shipping-label-actions"><button type="button" onClick={() => setLabelOrder(null)}>Fermer</button><button type="button" onClick={printShippingLabel} disabled={savingLabel}>{savingLabel ? 'Enregistrement…' : 'Enregistrer et imprimer'}</button></div><label className="shipping-address-field">Adresse complète ou point relais<input value={labelAddress} onChange={event => setLabelAddress(event.target.value)} maxLength={500} placeholder="À demander au client après confirmation" /></label><p className="shipping-label-hint">Saisis l’adresse ou le relais confirmé avec le client. Cette étiquette est à imprimer puis à recopier dans le portail de ton transporteur.</p><article className="shipping-label-print"><header><strong>CROOZA</strong><span>ÉTIQUETTE D’EXPÉDITION</span></header><div className="shipping-label-reference">COMMANDE #{String(labelOrder.id).slice(0, 8).toUpperCase()}</div><section><small>DESTINATAIRE</small><h2 id="shippingLabelTitle">{labelOrder.customer_name}</h2><p>{labelOrder.phone}</p><p>{labelAddress || 'Adresse / point relais à compléter'}</p><p>{labelOrder.city}</p></section><section><small>COLIS</small>{(labelOrder.items || []).map(item => <p className="shipping-label-item" key={item.id}>{item.name} · {item.size ? `pointure ${item.size} · ` : ''}Qté {item.quantity}</p>)}</section><footer><span>À ENCAISSER À LA LIVRAISON<strong>{money(labelOrder.total)}</strong></span><span>FRAIS DE LIVRAISON<strong>{money(labelOrder.shipping_fee)}</strong></span></footer><p className="shipping-label-note">Bon de préparation Crooza · à enregistrer sur le portail de la société de livraison</p></article></section></div>}
     </main>
   );
 }
