@@ -3,8 +3,8 @@ self.addEventListener('push', event => {
   try { data = event.data.json(); } catch { data = { title: 'Nouvelle commande Crooza', body: event.data?.text() || '' }; }
   event.waitUntil(self.registration.showNotification(data.title || 'Crooza', {
     body: data.body || 'Une nouvelle commande est arrivée.',
-    icon: '/images/crooza-mark.png',
-    badge: '/images/crooza-mark.png',
+    icon: '/icon.png',
+    badge: '/icon.png',
     data: { url: data.url || '/admin' },
     tag: 'crooza-orders',
   }));

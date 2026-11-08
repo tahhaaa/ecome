@@ -17,47 +17,44 @@ export async function POST(request) {
     const city = String(body.city || '').trim().slice(0, 80);
     const productId = String(body.productId || '').slice(0, 100);
     const size = String(body.size || '').trim().slice(0, 30);
-    const quantity = Math.max(1, Math.min(10, Number.parseInt(body.quantity, 10) || 1));
-    if (customerName.length < 2 || !/^\+?\d{9,15}$/.test(phone) || city.length < 2 || !productId) {
-      return Response.json({ error: 'Vérifiez le nom, le téléphone et la ville.' }, { status: 400 });
+    const quantity = Number.parseInt(body.quantity, 10);
+    if (customerName.length < 2 || !/^\+?\d{9,15}$/.test(phone) || city.length < 2 || !productId || !Number.isInteger(quantity) || quantity < 1 || quantity > 10) {
+      return Response.json({ error: 'Vérifiez le nom, le téléphone, la ville et la quantité.' }, { status: 400 });
     }
 
-    const rows = await db('shop_store?select=content&id=eq.1');
-    const product = rows?.[0]?.content?.products?.find(item => String(item.id) === productId);
-    if (!product) return Response.json({ error: 'Ce produit n’est plus disponible.' }, { status: 404 });
-    const availableSizes = Array.isArray(product.sizes) ? product.sizes.map(value => String(value).trim()).filter(Boolean) : [];
-    if (availableSizes.length && !availableSizes.includes(size)) return Response.json({ error: 'Choisissez une taille disponible pour ce produit.' }, { status: 400 });
-    if (!availableSizes.length && size) return Response.json({ error: 'Ce produit est proposé en taille unique.' }, { status: 400 });
-    const unitPrice = Number(product.price);
-    if (!Number.isFinite(unitPrice) || unitPrice < 0) return Response.json({ error: 'Prix du produit invalide.' }, { status: 400 });
-    const subtotal = unitPrice * quantity;
     const shippingFee = shippingFor(city);
     const trackingToken = randomBytes(32).toString('base64url');
-    const order = {
-      customer_name: customerName,
-      phone,
-      city,
-      items: [{ id: String(product.id), name: String(product.name), image: String(product.image || ''), unit_price: unitPrice, quantity, size: size || null }],
-      subtotal,
-      shipping_fee: shippingFee,
-      total: subtotal + shippingFee,
-      status: 'new',
-      tracking_token_hash: createHash('sha256').update(trackingToken).digest('hex'),
-    };
-    const saved = await db('shop_orders?select=id,created_at,total', {
-      method: 'POST', headers: { Prefer: 'return=representation' }, body: JSON.stringify(order),
+    const createdOrder = await db('rpc/place_shop_order', {
+      method: 'POST',
+      body: JSON.stringify({
+        p_customer_name: customerName,
+        p_phone: phone,
+        p_city: city,
+        p_product_id: productId,
+        p_quantity: quantity,
+        p_size: size,
+        p_shipping_fee: shippingFee,
+        p_tracking_token_hash: createHash('sha256').update(trackingToken).digest('hex'),
+      }),
     });
-    const createdOrder = saved?.[0];
-    if (!createdOrder) throw new Error('Supabase n’a pas retourné la commande enregistrée.');
+    if (!createdOrder?.id) throw new Error('Supabase n’a pas retourné la commande enregistrée.');
 
     try {
-      await sendOrderPush(createdOrder, customerName, `${product.name}${size ? ` · taille ${size}` : ''}`);
+      await sendOrderPush(createdOrder, customerName, `${createdOrder.product_name}${size ? ` · taille ${size}` : ''}`);
     } catch (error) {
       console.error('Order push failed:', error.message);
     }
     return Response.json({ ok: true, order: { id: createdOrder.id, total: createdOrder.total, size: size || null }, trackingToken }, { status: 201, headers: { 'Cache-Control': 'no-store' } });
   } catch (error) {
     console.error('Order save failed:', error.message);
+    const message = error.message || '';
+    if (message.includes('SIZE_OUT_OF_STOCK')) return Response.json({ error: 'Cette taille vient d’être épuisée. Choisissez une autre taille.' }, { status: 409 });
+    if (message.includes('OUT_OF_STOCK')) return Response.json({ error: 'Ce produit est épuisé.' }, { status: 409 });
+    if (message.includes('SIZE_NOT_AVAILABLE') || message.includes('PRODUCT_ONE_SIZE')) return Response.json({ error: 'Cette taille n’est pas disponible pour ce produit.' }, { status: 409 });
+    if (message.includes('PRODUCT_NOT_FOUND')) return Response.json({ error: 'Ce produit n’est plus disponible.' }, { status: 404 });
+    if (message.includes('place_shop_order') || message.includes('shop_orders') || message.includes('P0001')) {
+      return Response.json({ error: 'La commande n’a pas pu être enregistrée. Vérifiez que la migration Supabase 0005 est exécutée.' }, { status: 409 });
+    }
     return Response.json({ error: 'La commande n’a pas pu être enregistrée. Réessayez dans un instant.' }, { status: 503 });
   }
 }
@@ -65,7 +62,7 @@ export async function POST(request) {
 export async function GET(request) {
   if (!hasAdminSession(request)) return Response.json({ error: 'Connexion administrateur requise.' }, { status: 401 });
   try {
-    const rows = await db('shop_orders?select=*&order=created_at.desc&limit=200');
+    const rows = await db('shop_orders?select=*&deleted_at=is.null&order=created_at.desc&limit=200');
     return Response.json({ orders: rows || [] }, { headers: { 'Cache-Control': 'no-store' } });
   } catch (error) {
     console.error('Order list failed:', error.message);
@@ -76,18 +73,47 @@ export async function GET(request) {
 export async function PATCH(request) {
   if (!hasAdminSession(request)) return Response.json({ error: 'Connexion administrateur requise.' }, { status: 401 });
   try {
-    const { id, status } = await request.json();
-    if (!id || !['new', 'confirmed', 'shipped', 'completed', 'cancelled'].includes(status)) {
-      return Response.json({ error: 'Statut de commande invalide.' }, { status: 400 });
+    const body = await request.json();
+    const { id, status } = body;
+    if (!id || (status === undefined && body.delivery_expenses === undefined)) return Response.json({ error: 'Modification invalide.' }, { status: 400 });
+    const updates = {};
+    if (status !== undefined) {
+      if (!['new', 'confirmed', 'shipped', 'completed', 'cancelled'].includes(status)) return Response.json({ error: 'Statut de commande invalide.' }, { status: 400 });
+      updates.status = status;
     }
-    const rows = await db(`shop_orders?id=eq.${encodeURIComponent(String(id))}&select=id,status`, {
-      method: 'PATCH', headers: { Prefer: 'return=representation' }, body: JSON.stringify({ status, updated_at: new Date().toISOString() }),
+    if (body.delivery_expenses !== undefined) {
+      if (!Array.isArray(body.delivery_expenses) || body.delivery_expenses.length > 30) return Response.json({ error: 'Liste de frais invalide.' }, { status: 400 });
+      const cleanExpenses = [];
+      for (const entry of body.delivery_expenses) {
+        const label = String(entry.label || '').trim().slice(0, 80);
+        const amount = Number(entry.amount);
+        if (!label || !Number.isFinite(amount) || amount <= 0 || amount > 1_000_000) return Response.json({ error: 'Chaque frais doit avoir un motif et un montant positif.' }, { status: 400 });
+        cleanExpenses.push({ id: String(entry.id || randomBytes(8).toString('hex')), label, amount: Math.round(amount * 100) / 100, created_at: entry.created_at || new Date().toISOString() });
+      }
+      updates.delivery_expenses = cleanExpenses;
+    }
+    const rows = await db(`shop_orders?id=eq.${encodeURIComponent(String(id))}&deleted_at=is.null&select=id,status,delivery_expenses`, {
+      method: 'PATCH', headers: { Prefer: 'return=representation' }, body: JSON.stringify({ ...updates, updated_at: new Date().toISOString() }),
     });
     if (!rows?.length) return Response.json({ error: 'Commande introuvable.' }, { status: 404 });
     return Response.json({ ok: true, order: rows[0] }, { headers: { 'Cache-Control': 'no-store' } });
   } catch (error) {
     console.error('Order update failed:', error.message);
     return Response.json({ error: 'Impossible de modifier cette commande.' }, { status: 503 });
+  }
+}
+
+export async function DELETE(request) {
+  if (!hasAdminSession(request)) return Response.json({ error: 'Connexion administrateur requise.' }, { status: 401 });
+  try {
+    const { id } = await request.json();
+    if (!id || !/^[0-9a-f-]{36}$/i.test(String(id))) return Response.json({ error: 'Commande invalide.' }, { status: 400 });
+    const result = await db('rpc/soft_delete_shop_order', { method: 'POST', body: JSON.stringify({ p_order_id: id }) });
+    return Response.json({ ok: true, order: result }, { headers: { 'Cache-Control': 'no-store' } });
+  } catch (error) {
+    console.error('Order delete failed:', error.message);
+    const errorMessage = error.message || '';
+    return Response.json({ error: errorMessage.includes('ORDER_NOT_FOUND') ? 'Cette commande est introuvable ou déjà supprimée.' : 'Suppression impossible. Vérifiez la migration Supabase 0005.' }, { status: 503 });
   }
 }
 

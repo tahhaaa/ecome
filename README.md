@@ -16,7 +16,7 @@ Ouvrez <http://localhost:3000>.
 ## Configurer Supabase
 
 1. Créez un projet Supabase.
-2. Dans **SQL Editor**, exécutez les migrations dans l’ordre : `0001_init.sql`, `0002_orders_and_push.sql`, `0003_analytics.sql` pour les statistiques, puis `0004_order_tracking.sql` pour les liens privés de suivi.
+2. Dans **SQL Editor**, exécutez les migrations dans l’ordre : `0001_init.sql`, `0002_orders_and_push.sql`, `0003_analytics.sql` pour les statistiques, `0004_order_tracking.sql` pour les liens privés de suivi, puis `0005_inventory_finance_and_order_management.sql` pour le stock, les frais et la suppression de commandes.
 3. Copiez l’URL du projet et la clé **Secret** (`sb_secret_…`) depuis **Project Settings → API Keys**. Cette clé contourne les règles RLS : elle doit rester dans les variables d’environnement, jamais dans un composant client. L’ancienne clé `service_role` reste acceptée comme solution de compatibilité.
 
 ## Déployer sur Vercel
@@ -41,3 +41,5 @@ Ouvrez <http://localhost:3000>.
 Les images importées depuis le panneau admin peuvent peser jusqu’à 3 Mo chacune. Supabase Storage utilise un compartiment public pour afficher les photos ; seul le serveur possède les droits d’écriture.
 
 Les notifications utilisent le Push API du navigateur (HTTPS requis). Sur iPhone, ajoutez d’abord le site à l’écran d’accueil et autorisez les notifications pour l’application web.
+
+Dans **Modifier la boutique**, les tailles sont séparées par des virgules. Le stock par taille peut être saisi ligne par ligne au format `36 : 2`; ces quantités sont réservées atomiquement lorsqu’une commande arrive. Le prix d’achat reste visible uniquement dans l’administration. Les frais ajoutés à une commande sont des coûts internes et diminuent la marge estimée, sans modifier le montant annoncé au client.

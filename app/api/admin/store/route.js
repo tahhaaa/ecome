@@ -1,7 +1,13 @@
 import { hasAdminSession } from '../../../../lib/auth.js';
 import { db } from '../../../../lib/vercel/supabase.js';
+import { getRawStore } from '../../../../lib/store.js';
 
 export const runtime = 'nodejs';
+
+export async function GET(request) {
+  if (!hasAdminSession(request)) return Response.json({ error: 'Connexion administrateur requise.' }, { status: 401 });
+  return Response.json(await getRawStore(), { headers: { 'Cache-Control': 'no-store' } });
+}
 
 export async function PUT(request) {
   if (!hasAdminSession(request)) return Response.json({ error: 'Connexion administrateur requise.' }, { status: 401 });

@@ -28,6 +28,22 @@ async function upload(file) {
   return (await request('/api/admin/upload', { method: 'POST', body: JSON.stringify({ data: await imageData(file) }) })).url;
 }
 
+function parseStockBySize(value, sizes) {
+  const entries = String(value || '').split(/[\n;,]+/).map(item => item.trim()).filter(Boolean);
+  const inventory = {};
+  for (const entry of entries) {
+    const match = /^(.+?)\s*[:=]\s*(\d+)$/.exec(entry);
+    if (!match) throw new Error('Entre le stock par taille au format « 38 : 2 », une taille par ligne.');
+    const size = match[1].trim();
+    const quantity = Number(match[2]);
+    if (!sizes.includes(size)) throw new Error(`La taille « ${size} » n’est pas dans la liste des tailles disponibles.`);
+    if (Object.hasOwn(inventory, size)) throw new Error(`La taille « ${size} » apparaît plusieurs fois dans le stock.`);
+    if (quantity > 100_000) throw new Error('Le stock indiqué est trop élevé.');
+    inventory[size] = quantity;
+  }
+  return inventory;
+}
+
 export default function AdminPanel({ open, onClose, authenticated, onAuthenticated, store, saveStore, notify }) {
   const [tab, setTab] = useState('products');
   const [password, setPassword] = useState('');
@@ -61,6 +77,14 @@ export default function AdminPanel({ open, onClose, authenticated, onAuthenticat
     const form = new FormData(formElement);
     const imageFiles = Array.from(formElement.elements.images.files);
     try {
+      const sizes = [...new Set(String(form.get('sizes') || '').split(',').map(value => value.trim()).filter(Boolean))].slice(0, 20);
+      const inventoryBySize = parseStockBySize(form.get('inventoryBySize'), sizes);
+      const stock = Object.keys(inventoryBySize).length
+        ? Object.values(inventoryBySize).reduce((total, quantity) => total + quantity, 0)
+        : Number(form.get('stock') || 0);
+      const purchasePrice = Number(form.get('purchasePrice'));
+      if (!Number.isInteger(stock) || stock < 0) throw new Error('Le stock doit être un nombre entier positif.');
+      if (!Number.isFinite(purchasePrice) || purchasePrice < 0) throw new Error('Le prix d’achat doit être un montant positif.');
       const photos = String(form.get('photoUrls') || '').split('\n').map(value => value.trim()).filter(Boolean);
       for (const file of imageFiles) photos.push(await upload(file));
       if (!photos.length) photos.push('/images/crooza-mark.png');
@@ -69,8 +93,11 @@ export default function AdminPanel({ open, onClose, authenticated, onAuthenticat
         name: String(form.get('name')).trim(),
         description: String(form.get('description')).trim(),
         price: Number(form.get('price')),
+        purchasePrice,
+        stock,
+        inventoryBySize,
+        sizes,
         tag: String(form.get('tag')).trim() || 'À découvrir',
-        sizes: [...new Set(String(form.get('sizes') || '').split(',').map(value => value.trim()).filter(Boolean))].slice(0, 20),
         photos,
         image: photos[0],
       };
@@ -175,7 +202,7 @@ export default function AdminPanel({ open, onClose, authenticated, onAuthenticat
                 {store.products.map(product => (
                   <article className="admin-product" key={product.id}>
                     <img className="admin-product-thumb" src={product.image} alt="" />
-                    <div className="admin-product-meta"><strong>{product.name}</strong><span>{Number(product.price || 0).toLocaleString('fr-FR')} DH</span><span>{product.sizes?.length ? `Tailles : ${product.sizes.join(', ')}` : 'Taille unique'}</span></div>
+                    <div className="admin-product-meta"><strong>{product.name}</strong><span>Vente {Number(product.price || 0).toLocaleString('fr-FR')} DH · Achat {Number(product.purchasePrice || 0).toLocaleString('fr-FR')} DH</span><span>{product.sizes?.length ? `Stock : ${product.sizes.map(size => `${size} (${product.inventoryBySize?.[size] ?? product.stock ?? 0})`).join(' · ')}` : `Stock : ${product.stock ?? 'non suivi'}`}</span></div>
                     <div className="admin-product-actions"><button className="tiny-button" type="button" onClick={() => setEditingId(product.id)} aria-label={`Modifier ${product.name}`}>✎</button><button className="tiny-button delete" type="button" onClick={() => removeProduct(product.id)} aria-label={`Supprimer ${product.name}`}>×</button></div>
                   </article>
                 ))}
@@ -184,8 +211,11 @@ export default function AdminPanel({ open, onClose, authenticated, onAuthenticat
                 {(editingId !== null) && (
                   <form className="product-editor" key={editingId} onSubmit={saveProduct}>
                     <label>Nom du produit<input name="name" required maxLength={55} defaultValue={editing?.name || ''} /></label>
-                    <label>Prix (DH)<input name="price" type="number" min="0" required defaultValue={editing?.price ?? ''} /></label>
+                    <label>Prix de vente (DH)<input name="price" type="number" min="0" step="0.01" required defaultValue={editing?.price ?? ''} /></label>
+                    <label>Prix d’achat (DH)<input name="purchasePrice" type="number" min="0" step="0.01" required defaultValue={editing?.purchasePrice ?? ''} /></label>
+                    <label>Stock total<input name="stock" type="number" min="0" step="1" required defaultValue={editing?.stock ?? 0} /></label>
                     <label className="wide">Tailles disponibles<input name="sizes" maxLength={120} defaultValue={Array.isArray(editing?.sizes) ? editing.sizes.join(', ') : ''} placeholder="Ex. 36, 37, 38, 39 ou S, M, L, XL" /><span className="photo-hint">Sépare chaque taille par une virgule. Laisse vide pour un produit en taille unique.</span></label>
+                    <label className="wide">Stock par taille (facultatif)<textarea name="inventoryBySize" rows="3" defaultValue={editing?.inventoryBySize ? Object.entries(editing.inventoryBySize).map(([size, quantity]) => `${size} : ${quantity}`).join('\n') : ''} placeholder={'36 : 2\n37 : 4\n38 : 1'} /><span className="photo-hint">Une ligne par taille. Si tu renseignes ce tableau, le stock total est calculé automatiquement à partir de ces quantités.</span></label>
                     <label className="wide">Description<input name="description" maxLength={180} defaultValue={editing?.description || ''} /></label>
                     <label>Étiquette<input name="tag" maxLength={28} defaultValue={editing?.tag || 'À découvrir'} /></label>
                     <label>Ajouter des photos<input name="images" type="file" accept="image/png,image/jpeg,image/webp,image/gif" multiple /></label>

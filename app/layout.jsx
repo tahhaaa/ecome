@@ -5,6 +5,9 @@ export const metadata = {
   title: 'Crooza',
   description: 'Une sélection de pièces choisies avec soin. Découvrez la boutique et commandez directement sur WhatsApp.',
   applicationName: 'Crooza',
+  manifest: '/manifest.webmanifest',
+  icons: { icon: '/icon.png', apple: '/icon.png' },
+  appleWebApp: { capable: true, title: 'Crooza', statusBarStyle: 'black-translucent' },
 };
 
 export const viewport = { themeColor: '#f7f5ef' };

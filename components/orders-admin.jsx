@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState } from 'react';
 import AdminPanel from './admin-panel.jsx';
+import OrderFinance from './order-finance.jsx';
 
 const statusLabels = { new: 'Nouvelle', confirmed: 'Confirmée', shipped: 'Expédiée', completed: 'Terminée', cancelled: 'Annulée' };
 const statusOptions = ['new', 'confirmed', 'shipped', 'completed', 'cancelled'];
@@ -21,6 +22,12 @@ function decodeKey(value) {
 
 function money(amount) { return `${Number(amount || 0).toLocaleString('fr-FR')} DH`; }
 function date(value) { return new Intl.DateTimeFormat('fr-MA', { dateStyle: 'medium', timeStyle: 'short' }).format(new Date(value)); }
+function estimatedMargin(order) {
+  if ((order.items || []).some(item => item.purchase_price === null || item.purchase_price === undefined)) return null;
+  const purchases = (order.items || []).reduce((sum, item) => sum + Number(item.purchase_price || 0) * Number(item.quantity || 1), 0);
+  const expenses = (order.delivery_expenses || []).reduce((sum, item) => sum + Number(item.amount || 0), 0);
+  return Number(order.total) - purchases - expenses;
+}
 
 export default function OrdersAdmin() {
   const [authenticated, setAuthenticated] = useState(null);
@@ -75,7 +82,7 @@ export default function OrdersAdmin() {
   useEffect(() => {
     if (!authenticated) return undefined;
     setLoading(true);
-    request('/api/store').then(setShopStore).catch(() => {});
+    request('/api/admin/store').then(setShopStore).catch(() => {});
     if ('serviceWorker' in navigator) {
       navigator.serviceWorker.getRegistration('/sw.js').then(registration => registration?.pushManager.getSubscription()).then(subscription => {
         if (subscription) setPushState('enabled');
@@ -153,6 +160,24 @@ export default function OrdersAdmin() {
     } catch (updateError) { setError(updateError.message); }
   }
 
+  async function saveDeliveryExpenses(id, delivery_expenses) {
+    try {
+      const result = await request('/api/orders', { method: 'PATCH', body: JSON.stringify({ id, delivery_expenses }) });
+      setOrders(current => current.map(order => order.id === id ? { ...order, delivery_expenses: result.order.delivery_expenses } : order));
+      return true;
+    } catch (updateError) { setError(updateError.message); return false; }
+  }
+
+  async function deleteOrder(order) {
+    const reference = String(order.id).slice(0, 8).toUpperCase();
+    if (!window.confirm(`Supprimer la commande #${reference} ? Elle sera retirée des totaux et les articles seront remis en stock.`)) return;
+    try {
+      await request('/api/orders', { method: 'DELETE', body: JSON.stringify({ id: order.id }) });
+      setOrders(current => current.filter(item => item.id !== order.id));
+      setNotice(`Commande #${reference} supprimée et retirée des totaux.`);
+    } catch (deleteError) { setError(deleteError.message); }
+  }
+
   async function saveShopStore(next) {
     await request('/api/admin/store', { method: 'PUT', body: JSON.stringify(next) });
     setShopStore(next);
@@ -160,6 +185,9 @@ export default function OrdersAdmin() {
 
   const visibleOrders = filter === 'all' ? orders : orders.filter(order => order.status === filter);
   const newCount = orders.filter(order => order.status === 'new').length;
+  const activeOrders = orders.filter(order => order.status !== 'cancelled');
+  const canEstimateMargin = activeOrders.every(order => estimatedMargin(order) !== null);
+  const totalMargin = activeOrders.reduce((sum, order) => sum + (estimatedMargin(order) || 0), 0);
   const maxDailyVisitors = Math.max(1, ...(analytics?.daily || []).map(day => Number(day.visitors || 0)));
 
   if (authenticated === null) return <main className="admin-page"><div className="admin-loading">Crooza · Chargement de votre espace…</div></main>;
@@ -191,12 +219,12 @@ export default function OrdersAdmin() {
         {error && <div className="admin-error orders-error" role="alert">{error}</div>}
         {view === 'orders' ? <>
           <div className="orders-title-row"><div><p className="eyebrow"><span className="eyebrow-line" /> VOTRE BOUTIQUE · MAROC</p><h1>Commandes <em>reçues.</em></h1><p>Les nouvelles commandes se synchronisent automatiquement.</p></div><button className="refresh-button" type="button" onClick={() => refresh()} disabled={loading}>↻ Actualiser</button></div>
-          <div className="orders-stats"><div><span>À traiter</span><strong>{newCount}</strong></div><div><span>Toutes les commandes</span><strong>{orders.length}</strong></div><div><span>Chiffre confirmé</span><strong>{money(orders.filter(order => !['cancelled'].includes(order.status)).reduce((sum, order) => sum + Number(order.total || 0), 0))}</strong></div></div>
+          <div className="orders-stats"><div><span>À traiter</span><strong>{newCount}</strong></div><div><span>Commandes actives</span><strong>{orders.length}</strong></div><div><span>Chiffre d’affaires</span><strong>{money(activeOrders.reduce((sum, order) => sum + Number(order.total || 0), 0))}</strong></div><div><span>Marge estimée</span><strong>{canEstimateMargin ? money(totalMargin) : 'À compléter'}</strong></div></div>
           <div className="orders-toolbar"><div className="orders-filters"><button className={filter === 'all' ? 'active' : ''} onClick={() => setFilter('all')}>Toutes ({orders.length})</button><button className={filter === 'new' ? 'active' : ''} onClick={() => setFilter('new')}>Nouvelles ({newCount})</button><button className={filter === 'confirmed' ? 'active' : ''} onClick={() => setFilter('confirmed')}>Confirmées</button><button className={filter === 'shipped' ? 'active' : ''} onClick={() => setFilter('shipped')}>Expédiées</button></div><span className="sync-indicator"><i /> Actualisation automatique · 15 s</span></div>
           {visibleOrders.length ? <div className="orders-list">{visibleOrders.map(order => (
           <article className="order-card" key={order.id}>
             <div className="order-card-top"><div><span className="order-number">COMMANDE · {String(order.id).slice(0, 8).toUpperCase()}</span><time>{date(order.created_at)}</time></div><span className={`order-status status-${order.status}`}>{statusLabels[order.status] || order.status}</span></div>
-            <div className="order-card-content"><div className="order-customer"><strong>{order.customer_name}</strong><a href={`tel:${order.phone}`}>{order.phone} ↗</a><span>{order.city}</span><a className="order-whatsapp" href={`https://wa.me/${String(order.phone).replace(/\D/g, '')}?text=${encodeURIComponent(`Bonjour ${order.customer_name}, nous confirmons votre commande Crooza.`)}`} target="_blank" rel="noreferrer">Contacter sur WhatsApp ↗</a></div><div className="order-items">{(order.items || []).map(item => <div className="order-item" key={item.id}><img src={item.image || '/images/crooza-mark.png'} alt="" /><span>{item.name} <small>× {item.quantity}{item.size ? ` · taille ${item.size}` : ''}</small></span><strong>{money(item.unit_price * item.quantity)}</strong></div>)}</div><div className="order-costs"><span>Sous-total<strong>{money(order.subtotal)}</strong></span><span>Livraison<strong>{money(order.shipping_fee)}</strong></span><span className="order-total">Total<strong>{money(order.total)}</strong></span><label>Statut<select value={order.status} onChange={event => updateStatus(order.id, event.target.value)} aria-label={`Statut de la commande ${String(order.id).slice(0, 8)}`}>{statusOptions.map(status => <option value={status} key={status}>{statusLabels[status]}</option>)}</select></label></div></div>
+            <div className="order-card-content"><div className="order-customer"><strong>{order.customer_name}</strong><a href={`tel:${order.phone}`}>{order.phone} ↗</a><span>{order.city}</span><a className="order-whatsapp" href={`https://wa.me/${String(order.phone).replace(/\D/g, '')}?text=${encodeURIComponent(`Bonjour ${order.customer_name}, nous confirmons votre commande Crooza.`)}`} target="_blank" rel="noreferrer">Contacter sur WhatsApp ↗</a></div><div className="order-items">{(order.items || []).map(item => <div className="order-item" key={item.id}><img src={item.image || '/images/crooza-mark.png'} alt="" /><span>{item.name} <small>× {item.quantity}{item.size ? ` · taille ${item.size}` : ''}</small></span><strong>{money(item.unit_price * item.quantity)}</strong></div>)}</div><div className="order-costs"><span>Sous-total<strong>{money(order.subtotal)}</strong></span><span>Livraison payée<strong>{money(order.shipping_fee)}</strong></span><label>Statut<select value={order.status} onChange={event => updateStatus(order.id, event.target.value)} aria-label={`Statut de la commande ${String(order.id).slice(0, 8)}`}>{statusOptions.map(status => <option value={status} key={status}>{statusLabels[status]}</option>)}</select></label></div><OrderFinance order={order} onSaveExpenses={saveDeliveryExpenses} onDelete={deleteOrder} /></div>
           </article>
           ))}</div> : <div className="orders-empty"><span>✳</span><h2>{loading ? 'Chargement…' : filter === 'all' ? 'Aucune commande pour le moment.' : 'Aucune commande dans ce filtre.'}</h2><p>Les commandes passées sur votre boutique apparaîtront ici.</p></div>}
         </> : <div className="analytics-view">
