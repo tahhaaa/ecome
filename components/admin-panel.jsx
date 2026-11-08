@@ -219,6 +219,12 @@ export default function AdminPanel({ open, onClose, authenticated, onAuthenticat
       }
       const promotions = {
         freeShipping: { enabled: form.get('freeShipping') === 'on' },
+        promoPopup: {
+          enabled: form.get('popupEnabled') === 'on',
+          title: String(form.get('popupTitle') || '').trim().slice(0, 60),
+          message: String(form.get('popupMessage') || '').trim().slice(0, 180),
+          buttonLabel: String(form.get('popupButtonLabel') || '').trim().slice(0, 32) || 'Découvrir les articles',
+        },
         buyXGetY: {
           enabled,
           buyQuantity: Math.min(10, Math.max(1, Number.parseInt(form.get('buyQuantity'), 10) || 2)),
@@ -315,6 +321,14 @@ export default function AdminPanel({ open, onClose, authenticated, onAuthenticat
                     <div className="promotion-fields"><label>Produit à acheter<select name="buyProductId" defaultValue={store.promotions?.buyXGetY?.buyProductId || ''}><option value="">Choisir un produit</option>{store.products.map(product => <option value={product.id} key={product.id}>{product.name}</option>)}</select></label><span className="promotion-plus">→</span><label>Produit offert<select name="freeProductId" defaultValue={store.promotions?.buyXGetY?.freeProductId || ''}><option value="">Choisir le cadeau</option>{store.products.map(product => <option value={product.id} key={product.id}>{product.name}{product.oneSize ? '' : ' · nécessite une pointure'}</option>)}</select></label></div>
                     <div className="promotion-fields promotion-count-fields"><label>Quantité à acheter<input name="buyQuantity" type="number" min="1" max="10" required defaultValue={store.promotions?.buyXGetY?.buyQuantity ?? 2} /></label><span className="promotion-plus">+</span><label>Nombre de cadeaux<input name="freeQuantity" type="number" min="1" max="5" required defaultValue={store.promotions?.buyXGetY?.freeQuantity ?? 1} /></label></div>
                     <label>Texte de l’offre (facultatif)<input name="bundleLabel" maxLength={60} placeholder="Ex. 2 achetées, 1 offerte" defaultValue={store.promotions?.buyXGetY?.label || ''} /></label>
+                  </section>
+                  <section className="promotion-card promotion-popup-card">
+                    <label className="promotion-toggle"><input name="popupEnabled" type="checkbox" defaultChecked={store.promotions?.promoPopup?.enabled === true} /><span><strong>Fenêtre promotionnelle discrète</strong><small>Facultative : apparaît après quelques secondes, une seule fois par session. Le visiteur peut la fermer.</small></span></label>
+                    <div className="promotion-popup-fields">
+                      <label>Titre<input name="popupTitle" maxLength={60} defaultValue={store.promotions?.promoPopup?.title || 'Une offre Crooza'} placeholder="Une offre Crooza" /></label>
+                      <label>Message<textarea name="popupMessage" rows="3" maxLength={180} defaultValue={store.promotions?.promoPopup?.message || ''} placeholder="Laisse vide pour afficher automatiquement les promotions actives." /></label>
+                      <label>Texte du bouton<input name="popupButtonLabel" maxLength={32} defaultValue={store.promotions?.promoPopup?.buttonLabel || 'Découvrir les articles'} /></label>
+                    </div>
                   </section>
                   <button className="button button-dark" type="submit" disabled={busy}>{busy ? 'Enregistrement…' : 'Enregistrer les promotions ↗'}</button>
                   <p className="save-note">Le client voit le prix et le cadeau avant de confirmer. Le stock est vérifié et déduit automatiquement.</p>
