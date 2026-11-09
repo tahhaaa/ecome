@@ -5,9 +5,12 @@ import { getRawStore } from '../../../lib/store.js';
 
 export const runtime = 'nodejs';
 
-function shippingFor(city) {
+function shippingFor(city, deliveryPricing = {}) {
   const normalized = String(city || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').trim().toLowerCase();
-  return /^(rabat|temara|temara city|الرباط|تمارة)$/.test(normalized) ? 25 : 35;
+  const isRabatTemara = /^(rabat|temara|temara city|الرباط|تمارة)$/.test(normalized);
+  const configured = Number(isRabatTemara ? deliveryPricing.rabatTemara : deliveryPricing.standard);
+  const fallback = isRabatTemara ? 25 : 35;
+  return Number.isInteger(configured) && configured >= 0 && configured <= 1000 ? configured : fallback;
 }
 
 export async function POST(request) {
@@ -32,7 +35,8 @@ export async function POST(request) {
     }
     if (orderItems.some(item => item.quantity > 10)) return Response.json({ error: 'La quantité maximale par article est de 10.' }, { status: 400 });
 
-    const shippingFee = shippingFor(city);
+    const storeSettings = await getRawStore();
+    const shippingFee = shippingFor(city, storeSettings.deliveryPricing);
     const trackingToken = randomBytes(32).toString('base64url');
     const createdOrder = await db('rpc/place_shop_cart_order_with_tracking', {
       method: 'POST',
@@ -49,7 +53,7 @@ export async function POST(request) {
     if (!createdOrder?.id) throw new Error('Supabase n’a pas retourné la commande enregistrée.');
 
     try {
-      const expenseDefaults = (await getRawStore()).orderExpenseDefaults || {};
+      const expenseDefaults = storeSettings.orderExpenseDefaults || {};
       const defaultExpenses = [
         { key: 'shipping', label: 'Livraison' },
         { key: 'packaging', label: 'Emballage' },

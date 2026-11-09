@@ -261,7 +261,11 @@ export default function AdminPanel({ open, onClose, authenticated, onAuthenticat
           label: String(form.get('bundleLabel') || '').trim().slice(0, 60),
         },
       };
-      await saveStore({ ...store, promotions });
+      const deliveryPricing = {
+        standard: Math.min(1000, Math.max(0, Number.parseInt(form.get('deliveryStandard'), 10) || 0)),
+        rabatTemara: Math.min(1000, Math.max(0, Number.parseInt(form.get('deliveryRabatTemara'), 10) || 0)),
+      };
+      await saveStore({ ...store, promotions, deliveryPricing });
       notify('Promotions enregistrées ✓');
     } catch (error) {
       notify(error.message);
@@ -338,11 +342,12 @@ export default function AdminPanel({ open, onClose, authenticated, onAuthenticat
             ) : tab === 'promotions' ? (
               <div className="admin-content">
                 <div className="admin-section-title"><div><h3>Offres de la boutique</h3><p>Active les promotions quand tu veux. Elles s’appliquent automatiquement au panier et au montant à payer.</p></div></div>
-                <form className="style-form promotion-form" key={JSON.stringify(store.promotions || {})} onSubmit={savePromotions}>
+                <form className="style-form promotion-form" key={JSON.stringify({ promotions: store.promotions || {}, deliveryPricing: store.deliveryPricing || {} })} onSubmit={savePromotions}>
                   <section className="promotion-card">
                     <label className="promotion-toggle"><input name="freeShipping" type="checkbox" defaultChecked={store.promotions?.freeShipping?.enabled === true} /><span><strong>Livraison gratuite</strong><small>Supprime les frais de livraison pour toutes les villes tant que l’offre est active.</small></span></label>
                     <span className="promotion-badge">Offre boutique</span>
                   </section>
+                  <section className="promotion-card delivery-pricing-card"><div><strong>Tarifs de livraison</strong><small>Ces tarifs sont affichés au client et ajoutés à sa commande selon la ville.</small></div><div className="promotion-fields"><label>Autres villes · DH<input name="deliveryStandard" type="number" min="0" max="1000" step="1" required defaultValue={store.deliveryPricing?.standard ?? 35} /></label><label>Rabat / Témara · DH<input name="deliveryRabatTemara" type="number" min="0" max="1000" step="1" required defaultValue={store.deliveryPricing?.rabatTemara ?? 25} /></label></div></section>
                   <section className="promotion-card promotion-bundle">
                     <label className="promotion-toggle"><input name="bundleEnabled" type="checkbox" defaultChecked={store.promotions?.buyXGetY?.enabled === true} /><span><strong>Achetés + offerts</strong><small>Sélectionne un ou plusieurs produits déclencheurs et offre le produit de ton choix. Si le cadeau a des pointures, choisis celle qui sera offerte.</small></span></label>
                     <fieldset className="promo-product-picker"><legend>Produits concernés</legend><p>Le nombre d’articles choisis parmi ces produits est additionné pour atteindre l’offre.</p><div>{store.products.map(product => <label key={product.id}><input name="buyProductIds" type="checkbox" value={product.id} defaultChecked={(store.promotions?.buyXGetY?.buyProductIds || [store.promotions?.buyXGetY?.buyProductId].filter(Boolean)).map(String).includes(String(product.id))} /><span>{product.name}</span></label>)}</div></fieldset>

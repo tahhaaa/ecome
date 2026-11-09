@@ -2,15 +2,18 @@
 
 import { useMemo, useState } from 'react';
 
-function deliveryPrice(city, freeShipping = false) {
+function deliveryPrice(city, freeShipping = false, deliveryPricing = {}) {
   if (freeShipping) return 0;
   const name = String(city || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').trim().toLowerCase();
-  return ['rabat', 'temara', 'الرباط', 'تمارة'].includes(name) ? 25 : 35;
+  const isRabatTemara = ['rabat', 'temara', 'temara city', 'الرباط', 'تمارة'].includes(name);
+  const configured = Number(isRabatTemara ? deliveryPricing.rabatTemara : deliveryPricing.standard);
+  const fallback = isRabatTemara ? 25 : 35;
+  return Number.isFinite(configured) && configured >= 0 && configured <= 1000 ? configured : fallback;
 }
 
 function money(value) { return `${Number(value || 0).toLocaleString('fr-FR')} DH`; }
 
-export default function CheckoutModal({ items, products, promotions = {}, checkoutMode = false, onCheckoutModeChange, onUpdateItems, onClose }) {
+export default function CheckoutModal({ items, products, promotions = {}, deliveryPricing = {}, checkoutMode = false, onCheckoutModeChange, onUpdateItems, onClose }) {
   const [city, setCity] = useState('');
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
@@ -30,7 +33,7 @@ export default function CheckoutModal({ items, products, promotions = {}, checko
     ? Math.floor(eligibleBuyQuantity / buyQuantity) * Math.max(1, Number(bundle.freeQuantity) || 1)
     : 0;
   const freeShipping = promotions.freeShipping?.enabled === true;
-  const shipping = useMemo(() => deliveryPrice(city, freeShipping), [city, freeShipping]);
+  const shipping = useMemo(() => deliveryPrice(city, freeShipping, deliveryPricing), [city, freeShipping, deliveryPricing]);
   const subtotal = cart.reduce((total, item) => total + Number(item.product.price || 0) * Number(item.quantity || 0), 0);
   const itemCount = cart.reduce((total, item) => total + Number(item.quantity || 0), 0);
 

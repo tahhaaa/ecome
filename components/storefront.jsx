@@ -181,7 +181,7 @@ export default function Storefront({ initialStore }) {
 
       {promoOpen && <div className="buyer-promo-backdrop" onMouseDown={event => event.target === event.currentTarget && dismissPromo()}><section className={`buyer-promo-popup ${promoPopup.image ? 'has-poster' : ''}`} role="dialog" aria-modal="true" aria-labelledby="buyerPromoTitle"><button type="button" className="buyer-promo-close" onClick={dismissPromo} aria-label="Fermer">×</button>{promoPopup.image && <img className="buyer-promo-poster" src={promoPopup.image} alt="Affiche promotionnelle Crooza" />}{!promoPopup.image && <span className="buyer-kicker">UNE PETITE ATTENTION</span>}<div className="buyer-promo-content">{!promoPopup.image && <span className="buyer-promo-mark">✳</span>}<h2 id="buyerPromoTitle">{promoPopup.title || 'Une offre Crooza'}</h2><p>{promoMessage}</p><a href="#collection" onClick={dismissPromo}>{promoPopup.buttonLabel || 'Découvrir les articles'} <span>↗</span></a><button type="button" className="buyer-promo-later" onClick={dismissPromo}>Pas maintenant</button></div></section></div>}
 
-      {cartOpen && <CheckoutModal items={cartItems} products={store.products} promotions={store.promotions} checkoutMode={checkoutMode} onCheckoutModeChange={setCheckoutMode} onUpdateItems={setCartItems} onClose={closeCart} />}
+      {cartOpen && <CheckoutModal items={cartItems} products={store.products} promotions={store.promotions} deliveryPricing={store.deliveryPricing} checkoutMode={checkoutMode} onCheckoutModeChange={setCheckoutMode} onUpdateItems={setCartItems} onClose={closeCart} />}
     </div>
   );
 }
