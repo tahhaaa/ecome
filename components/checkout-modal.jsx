@@ -10,7 +10,7 @@ function deliveryPrice(city, freeShipping = false) {
 
 function money(value) { return `${Number(value || 0).toLocaleString('fr-FR')} DH`; }
 
-export default function CheckoutModal({ items, products, promotions = {}, onUpdateItems, onClose }) {
+export default function CheckoutModal({ items, products, promotions = {}, checkoutMode = false, onCheckoutModeChange, onUpdateItems, onClose }) {
   const [city, setCity] = useState('');
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
@@ -78,8 +78,9 @@ export default function CheckoutModal({ items, products, promotions = {}, onUpda
           </div>
         ) : (
           <>
-            <p className="eyebrow"><span className="eyebrow-line" /> COMMANDE EN QUELQUES SECONDES</p>
-            <h2 id="checkoutTitle">Votre <em>panier.</em></h2>
+            <p className="eyebrow"><span className="eyebrow-line" /> {checkoutMode ? 'ÉTAPE 2 · FINALISER LA COMMANDE' : 'ÉTAPE 1 · VOTRE SÉLECTION'}</p>
+            <h2 id="checkoutTitle">{checkoutMode ? <>Finaliser <em>la commande.</em></> : <>Votre <em>panier.</em></>}</h2>
+            <p className="checkout-step-note">{checkoutMode ? 'Vérifie les articles et renseigne tes coordonnées. La commande sera envoyée seulement quand tu appuieras sur le bouton en bas.' : 'Ton article est dans le panier. Vérifie la pointure et la quantité, puis passe à la commande.'}</p>
             <div className="cart-items-list">
               {cart.map(({ product, productId, quantity, size }) => {
                 const sizes = product.oneSize ? [] : (Array.isArray(product.sizes) && product.sizes.length ? product.sizes : ['35-36', '37-38', '39-40', '41-42', '43-44', '45-46']);
@@ -99,15 +100,16 @@ export default function CheckoutModal({ items, products, promotions = {}, onUpda
             </div>
             {freeQuantity > 0 && giftProduct && <div className="cart-gift-note">✳ Offre Crooza : <strong>{freeQuantity} {giftProduct.name}{bundle.freeProductSize ? ` · pointure ${bundle.freeProductSize}` : ''}</strong> offert{freeQuantity > 1 ? 's' : 'e'} avec {eligibleBuyQuantity} article{eligibleBuyQuantity > 1 ? 's' : ''} acheté{eligibleBuyQuantity > 1 ? 's' : ''}{eligibleBuyNames ? ` (${eligibleBuyNames})` : ''}.</div>}
             {bundle.enabled && eligibleBuyItems.length > 0 && !freeQuantity && <p className="cart-promo-hint">Ajoute encore {Math.max(0, Number(bundle.buyQuantity || 2) - eligibleBuyQuantity)} article(s) concerné(s) pour recevoir {giftProduct?.name || 'le cadeau'} offert.</p>}
-            <form className="checkout-form" onSubmit={submit}>
+            {!checkoutMode ? <><button className="button button-dark checkout-next-step" type="button" onClick={() => onCheckoutModeChange?.(true)} disabled={!cart.length}>Commander maintenant <span>→</span></button><button className="checkout-back-to-cart" type="button" onClick={onClose}>Continuer mes achats</button></> : <form className="checkout-form" onSubmit={submit}>
               <label>Votre nom complet<input name="name" autoComplete="name" required minLength={2} maxLength={100} placeholder="Ex. Sara El Amrani" /></label>
               <label>Votre téléphone<input name="phone" type="tel" autoComplete="tel" inputMode="tel" required pattern="[+0-9 ()().-]{9,20}" placeholder="06 12 34 56 78" /></label>
               <label>Votre ville<input name="city" autoComplete="address-level2" required minLength={2} maxLength={80} value={city} onChange={event => setCity(event.target.value)} placeholder="Ex. Casablanca, Rabat, Témara…" /></label>
               <div className="checkout-summary"><span>Articles · {itemCount}</span><strong>{money(subtotal)}</strong>{freeQuantity > 0 && giftProduct && <><span>{giftProduct.name}{bundle.freeProductSize ? ` · ${bundle.freeProductSize}` : ''} offert{freeQuantity > 1 ? 's' : 'e'}</span><strong>{freeQuantity} · 0 DH</strong></>}<span>Livraison <small>{freeShipping ? '· offerte' : city.trim() ? `· ${city}` : '· toutes les villes'}</small></span><strong>{shipping === 0 ? 'Offerte' : money(shipping)}</strong><span className="checkout-summary-total">Total à payer à la livraison</span><strong className="checkout-summary-total">{money(subtotal + shipping)}</strong></div>
               {error && <p className="checkout-error" role="alert">{error}</p>}
-              <button className="button button-dark checkout-submit" type="submit" disabled={busy || !cart.length}>{busy ? 'Envoi de la commande…' : 'Confirmer ma commande'} <span>↗</span></button>
+              <button className="button button-dark checkout-submit" type="submit" disabled={busy || !cart.length}>{busy ? 'Enregistrement…' : 'Confirmer ma commande'} <span>↗</span></button>
               <p className="checkout-privacy">Aucune adresse demandée. Nous confirmons votre commande par téléphone.</p>
-            </form>
+              <button className="checkout-back-to-cart" type="button" onClick={() => onCheckoutModeChange?.(false)}>← Retour au panier</button>
+            </form>}
           </>
         )}
       </section>

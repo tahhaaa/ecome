@@ -472,6 +472,7 @@ button:focus-visible,a:focus-visible,input:focus-visible,textarea:focus-visible,
 .expense-form button:disabled{opacity:.55}
 .delete-order-button{justify-self:start;padding:5px 0;border:0;background:none;color:#a04c3e;font:9px var(--sans);text-decoration:underline;cursor:pointer}
 .product-order:disabled,.detail-order:disabled{opacity:.45;cursor:not-allowed;color:var(--muted)}
+.detail-buy-actions{display:grid;gap:9px}.detail-buy-actions .detail-order{width:100%;justify-content:space-between}.detail-buy-now{width:100%;min-height:45px;display:flex;justify-content:space-between;align-items:center;padding:0 14px;border:1px solid var(--ink);background:transparent;color:var(--ink);font:500 11px var(--sans);cursor:pointer}.detail-buy-now:hover{background:#eee8dc}.detail-buy-now:disabled{opacity:.45;cursor:not-allowed}
 .product-order:disabled span{color:var(--muted)}
 .promotion-strip{display:flex;justify-content:center;flex-wrap:wrap;gap:12px;padding:19px 7%;background:#f0e7d9;border-bottom:1px solid var(--line)}
 .promotion-strip span{display:inline-flex;align-items:center;gap:8px;color:var(--ink);font-size:10px;letter-spacing:.03em}
@@ -505,6 +506,7 @@ button:focus-visible,a:focus-visible,input:focus-visible,textarea:focus-visible,
 .cart-line-total{font-size:10px;white-space:nowrap}
 .cart-remove{border:0;background:none;color:#9a6254;font-size:20px;line-height:1;cursor:pointer}
 .cart-empty{padding:16px;color:var(--muted);font-size:11px;text-align:center;background:#f0ede6}
+.checkout-step-note{margin:-8px 0 16px;color:var(--muted);font-size:11px;line-height:1.6}.checkout-next-step{width:100%;min-height:48px;display:flex;justify-content:space-between;align-items:center;margin:8px 0 3px;padding:0 14px;border:0;cursor:pointer}.checkout-next-step:disabled{opacity:.45;cursor:not-allowed}.checkout-back-to-cart{border:0;background:none;color:var(--muted);font-size:10px;text-decoration:underline;cursor:pointer;padding:4px}.detail-help{max-width:340px}
 .cart-gift-note,.cart-promo-hint{margin:0 0 14px;padding:11px 12px;background:#f0e7d9;color:#74503e;font-size:10px;line-height:1.6}
 .cart-promo-hint{background:#f8eee8;color:#866d62}
 .promotion-fields select{width:100%;min-width:0;border:1px solid var(--line);background:#fff;padding:9px;color:var(--ink);font-size:11px}
