@@ -83,6 +83,17 @@ function ProductStockPicker({ product }) {
   );
 }
 
+function PromotionGiftPicker({ products, promotion }) {
+  const [productId, setProductId] = useState(String(promotion?.freeProductId || ''));
+  const product = products.find(item => String(item.id) === productId);
+  const inventory = product?.inventoryBySize || {};
+  const sizes = (product?.sizes || []).filter(size => !Object.keys(inventory).length || Number(inventory[size] || 0) > 0);
+  return <div className="promotion-gift-picker">
+    <label>Produit offert<select name="freeProductId" value={productId} onChange={event => setProductId(event.target.value)}><option value="">Choisir le cadeau</option>{products.map(item => <option value={item.id} key={item.id}>{item.name}</option>)}</select></label>
+    {product && !product.oneSize ? <label>Pointure du cadeau<select name="freeProductSize" defaultValue={promotion?.freeProductSize || ''}><option value="">Choisir la pointure offerte</option>{sizes.map(size => <option value={size} key={size}>{String(size).replace('-', '–')}</option>)}</select><small>La pointure choisie sera réservée dans le stock du produit offert.</small></label> : <input type="hidden" name="freeProductSize" value="" />}
+  </div>;
+}
+
 export default function AdminPanel({ open, onClose, authenticated, onAuthenticated, store, saveStore, notify }) {
   const [tab, setTab] = useState('products');
   const [password, setPassword] = useState('');
@@ -213,10 +224,18 @@ export default function AdminPanel({ open, onClose, authenticated, onAuthenticat
       const buyProductIds = [...new Set(form.getAll('buyProductIds').map(value => String(value)))];
       const buyProductId = buyProductIds[0] || '';
       const freeProductId = String(form.get('freeProductId') || '');
+      const freeProductSize = String(form.get('freeProductSize') || '');
+      const freeQuantity = Math.min(5, Math.max(1, Number.parseInt(form.get('freeQuantity'), 10) || 1));
       if (enabled) {
         if (!buyProductIds.length || !freeProductId || buyProductIds.includes(freeProductId)) throw new Error('Choisis au moins un produit à acheter et un cadeau différent.');
         const giftProduct = store.products.find(product => String(product.id) === freeProductId);
-        if (!giftProduct?.oneSize) throw new Error('Le produit offert doit être configuré sans pointure, par exemple un pin Crocs.');
+        if (!giftProduct) throw new Error('Choisis le produit offert.');
+        if (giftProduct.oneSize) {
+          if (Number(giftProduct.stock || 0) < freeQuantity) throw new Error('Le stock du produit offert est insuffisant pour cette offre.');
+        } else {
+          if (!freeProductSize || !(giftProduct.sizes || []).map(String).includes(freeProductSize)) throw new Error('Choisis une pointure disponible pour le produit offert.');
+          if (Number(giftProduct.inventoryBySize?.[freeProductSize] || 0) < freeQuantity) throw new Error('Le stock de cette pointure est insuffisant pour le cadeau.');
+        }
       }
       let popupImage = String(store.promotions?.promoPopup?.image || '');
       const popupImageFile = form.get('popupImageFile');
@@ -234,10 +253,11 @@ export default function AdminPanel({ open, onClose, authenticated, onAuthenticat
         buyXGetY: {
           enabled,
           buyQuantity: Math.min(10, Math.max(1, Number.parseInt(form.get('buyQuantity'), 10) || 2)),
-          freeQuantity: Math.min(5, Math.max(1, Number.parseInt(form.get('freeQuantity'), 10) || 1)),
+          freeQuantity,
           buyProductIds,
           buyProductId,
           freeProductId,
+          freeProductSize,
           label: String(form.get('bundleLabel') || '').trim().slice(0, 60),
         },
       };
@@ -324,9 +344,9 @@ export default function AdminPanel({ open, onClose, authenticated, onAuthenticat
                     <span className="promotion-badge">Offre boutique</span>
                   </section>
                   <section className="promotion-card promotion-bundle">
-                    <label className="promotion-toggle"><input name="bundleEnabled" type="checkbox" defaultChecked={store.promotions?.buyXGetY?.enabled === true} /><span><strong>Achetés + offerts</strong><small>Sélectionne un ou plusieurs produits qui déclenchent l’offre, puis choisis un cadeau différent. Le cadeau doit être un article sans pointure, comme un pin Crocs.</small></span></label>
+                    <label className="promotion-toggle"><input name="bundleEnabled" type="checkbox" defaultChecked={store.promotions?.buyXGetY?.enabled === true} /><span><strong>Achetés + offerts</strong><small>Sélectionne un ou plusieurs produits déclencheurs et offre le produit de ton choix. Si le cadeau a des pointures, choisis celle qui sera offerte.</small></span></label>
                     <fieldset className="promo-product-picker"><legend>Produits concernés</legend><p>Le nombre d’articles choisis parmi ces produits est additionné pour atteindre l’offre.</p><div>{store.products.map(product => <label key={product.id}><input name="buyProductIds" type="checkbox" value={product.id} defaultChecked={(store.promotions?.buyXGetY?.buyProductIds || [store.promotions?.buyXGetY?.buyProductId].filter(Boolean)).map(String).includes(String(product.id))} /><span>{product.name}</span></label>)}</div></fieldset>
-                    <div className="promotion-fields"><label>Produit offert<select name="freeProductId" defaultValue={store.promotions?.buyXGetY?.freeProductId || ''}><option value="">Choisir le cadeau</option>{store.products.map(product => <option value={product.id} key={product.id}>{product.name}{product.oneSize ? '' : ' · nécessite une pointure'}</option>)}</select></label></div>
+                    <PromotionGiftPicker products={store.products} promotion={store.promotions?.buyXGetY} />
                     <div className="promotion-fields promotion-count-fields"><label>Quantité à acheter<input name="buyQuantity" type="number" min="1" max="10" required defaultValue={store.promotions?.buyXGetY?.buyQuantity ?? 2} /></label><span className="promotion-plus">+</span><label>Nombre de cadeaux<input name="freeQuantity" type="number" min="1" max="5" required defaultValue={store.promotions?.buyXGetY?.freeQuantity ?? 1} /></label></div>
                     <label>Texte de l’offre (facultatif)<input name="bundleLabel" maxLength={60} placeholder="Ex. 2 achetées, 1 offerte" defaultValue={store.promotions?.buyXGetY?.label || ''} /></label>
                   </section>

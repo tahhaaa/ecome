@@ -52,7 +52,7 @@ export async function POST(request) {
     } catch (error) {
       console.error('Order push failed:', error.message);
     }
-    return Response.json({ ok: true, order: { id: createdOrder.id, total: createdOrder.total, subtotal: createdOrder.subtotal, shipping_fee: createdOrder.shipping_fee, free_quantity: createdOrder.free_quantity || 0, free_product_name: createdOrder.free_product_name || null }, trackingToken }, { status: 201, headers: { 'Cache-Control': 'no-store' } });
+    return Response.json({ ok: true, order: { id: createdOrder.id, total: createdOrder.total, subtotal: createdOrder.subtotal, shipping_fee: createdOrder.shipping_fee, free_quantity: createdOrder.free_quantity || 0, free_product_name: createdOrder.free_product_name || null, free_product_size: createdOrder.free_product_size || null }, trackingToken }, { status: 201, headers: { 'Cache-Control': 'no-store' } });
   } catch (error) {
     console.error('Order save failed:', error.message);
     const message = error.message || '';
@@ -64,7 +64,7 @@ export async function POST(request) {
     if (message.includes('SIZE_NOT_AVAILABLE') || message.includes('PRODUCT_ONE_SIZE')) return Response.json({ error: 'Cette taille n’est pas disponible pour ce produit.' }, { status: 409 });
     if (message.includes('PRODUCT_NOT_FOUND')) return Response.json({ error: 'Ce produit n’est plus disponible.' }, { status: 404 });
     if (message.includes('place_shop_order') || message.includes('shop_orders') || message.includes('P0001')) {
-      return Response.json({ error: 'La commande n’a pas pu être enregistrée. Vérifiez que la migration Supabase 0005 est exécutée.' }, { status: 409 });
+      return Response.json({ error: 'La commande n’a pas pu être enregistrée. Vérifiez que les migrations Supabase récentes sont exécutées.' }, { status: 409 });
     }
     return Response.json({ error: 'La commande n’a pas pu être enregistrée. Réessayez dans un instant.' }, { status: 503 });
   }

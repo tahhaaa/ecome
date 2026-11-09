@@ -16,14 +16,23 @@ async function record(event) {
   }
 }
 
+function getVisitorId() {
+  try {
+    let visitorId = window.sessionStorage.getItem('crooza-visit-id');
+    if (!visitorId) {
+      visitorId = globalThis.crypto?.randomUUID?.() || `${Date.now()}-${Math.random().toString(36).slice(2)}`;
+      window.sessionStorage.setItem('crooza-visit-id', visitorId);
+    }
+    return visitorId;
+  } catch {
+    // Analytics storage can be blocked; never let that stop shopping actions.
+    return globalThis.crypto?.randomUUID?.() || `${Date.now()}-${Math.random().toString(36).slice(2)}`;
+  }
+}
+
 export function trackProductView(productId) {
   if (typeof window === 'undefined') return;
-  let visitorId = sessionStorage.getItem('crooza-visit-id');
-  if (!visitorId) {
-    visitorId = crypto.randomUUID();
-    sessionStorage.setItem('crooza-visit-id', visitorId);
-  }
-  record({ type: 'product_view', visitorId, path: window.location.pathname, productId: String(productId) });
+  record({ type: 'product_view', visitorId: getVisitorId(), path: window.location.pathname, productId: String(productId) });
 }
 
 export default function AnalyticsTracker() {
@@ -31,11 +40,7 @@ export default function AnalyticsTracker() {
 
   useEffect(() => {
     if (!pathname || pathname.startsWith('/admin')) return undefined;
-    let visitorId = sessionStorage.getItem('crooza-visit-id');
-    if (!visitorId) {
-      visitorId = crypto.randomUUID();
-      sessionStorage.setItem('crooza-visit-id', visitorId);
-    }
+    const visitorId = getVisitorId();
 
     record({ type: 'page_view', visitorId, path: pathname });
     record({ type: 'heartbeat', visitorId, path: pathname });

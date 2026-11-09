@@ -23,6 +23,23 @@ function decodeKey(value) {
 
 function money(amount) { return `${Number(amount || 0).toLocaleString('fr-FR')} DH`; }
 function date(value) { return new Intl.DateTimeFormat('fr-MA', { dateStyle: 'medium', timeStyle: 'short' }).format(new Date(value)); }
+function whatsappPhone(phone) {
+  let digits = String(phone || '').replace(/\D/g, '');
+  if (digits.startsWith('00212')) digits = digits.slice(2);
+  if (digits.startsWith('0') && digits.length === 10) digits = `212${digits.slice(1)}`;
+  else if (digits.length === 9 && /^[567]/.test(digits)) digits = `212${digits}`;
+  return digits;
+}
+function defaultConfirmationMessage(order) {
+  const items = (order.items || []).map(item => `${item.name}${item.size ? ` · القياس ${item.size}` : ''} × ${item.free_quantity && Number(item.paid_quantity) === 0 ? `${item.free_quantity} هدية` : `${item.paid_quantity ?? item.quantity}${item.free_quantity ? ` + ${item.free_quantity} هدية` : ''}`}`).join('، ');
+  const trackingUrl = order.tracking_token ? `${window.location.origin}/suivi#${encodeURIComponent(order.tracking_token)}` : '';
+  const trackingLine = trackingUrl ? `\n🔎 تتبع الطلب ديالك: ${trackingUrl}` : '';
+  const total = `${Number(order.total || 0).toLocaleString('fr-FR')} درهم`;
+  return `سلام ${order.customer_name} 😊\nكنأكدوا ليك الطلب ديالك من Crooza 🛍️\n👟 ${items}\n💰 المجموع مع التوصيل: ${total}\n📍 المدينة: ${order.city}\nباش نوجدو ليك الإرسال، صيفط لينا العنوان كامل ولا أقرب نقطة تسليم 📦${trackingLine}\nشكراً على الثقة ديالك في Crooza 🤎`;
+}
+function whatsappLink(phone, message) {
+  return `https://wa.me/${whatsappPhone(phone)}?text=${encodeURIComponent(message)}`;
+}
 function estimatedMargin(order) {
   if ((order.items || []).some(item => item.purchase_price === null || item.purchase_price === undefined)) return null;
   const purchases = (order.items || []).reduce((sum, item) => sum + Number(item.purchase_price || 0) * Number(item.quantity || 1), 0);
@@ -47,6 +64,7 @@ export default function OrdersAdmin() {
   const [analyticsError, setAnalyticsError] = useState('');
   const [testingPush, setTestingPush] = useState(false);
   const [confirmingOrderId, setConfirmingOrderId] = useState(null);
+  const [confirmationDrafts, setConfirmationDrafts] = useState({});
   const [labelOrder, setLabelOrder] = useState(null);
   const [labelAddress, setLabelAddress] = useState('');
   const [savingLabel, setSavingLabel] = useState(false);
@@ -166,22 +184,13 @@ export default function OrdersAdmin() {
   }
 
   async function confirmOrder(order) {
-    const messageWindow = window.open('about:blank', '_blank');
     setConfirmingOrderId(order.id);
     setError('');
     try {
       await request('/api/orders', { method: 'PATCH', body: JSON.stringify({ id: order.id, status: 'confirmed' }) });
       setOrders(current => current.map(item => item.id === order.id ? { ...item, status: 'confirmed' } : item));
-      const items = (order.items || []).map(item => `${item.name}${item.size ? ` · القياس ${item.size}` : ''} × ${item.free_quantity && Number(item.paid_quantity) === 0 ? `${item.free_quantity} هدية` : `${item.paid_quantity ?? item.quantity}${item.free_quantity ? ` + ${item.free_quantity} هدية` : ''}`}`).join('، ');
-      const trackingUrl = order.tracking_token ? `${window.location.origin}/suivi#${encodeURIComponent(order.tracking_token)}` : '';
-      const trackingLine = trackingUrl ? `\n🔎 تتبع الطلب ديالك: ${trackingUrl}` : '';
-      const total = `${Number(order.total || 0).toLocaleString('fr-FR')} درهم`;
-      const message = `سلام ${order.customer_name} 😊\nكنأكدوا ليك الطلب ديالك من Crooza 🛍️\n👟 ${items}\n💰 المجموع مع التوصيل: ${total}\n📍 المدينة: ${order.city}\nباش نوجدو ليك الإرسال، صيفط لينا العنوان كامل ولا أقرب نقطة تسليم 📦${trackingLine}\nشكراً على الثقة ديالك في Crooza 🤎`;
-      const whatsappUrl = `https://wa.me/${String(order.phone).replace(/\D/g, '')}?text=${encodeURIComponent(message)}`;
-      if (messageWindow) messageWindow.location.href = whatsappUrl;
-      setNotice(messageWindow ? 'Message de confirmation ouvert dans WhatsApp : appuie sur Envoyer.' : 'Commande confirmée. Utilise le lien WhatsApp de la commande pour écrire au client.');
+      setNotice('Commande confirmée. Le message WhatsApp est prêt : appuie sur Envoyer dans WhatsApp.');
     } catch (confirmError) {
-      messageWindow?.close();
       setError(confirmError.message);
     } finally {
       setConfirmingOrderId(null);
@@ -263,12 +272,15 @@ export default function OrdersAdmin() {
           <div className="orders-title-row"><div><p className="eyebrow"><span className="eyebrow-line" /> VOTRE BOUTIQUE · MAROC</p><h1>Commandes <em>reçues.</em></h1><p>Les nouvelles commandes se synchronisent automatiquement.</p></div><button className="refresh-button" type="button" onClick={() => refresh()} disabled={loading}>↻ Actualiser</button></div>
           <div className="orders-stats"><div><span>À traiter</span><strong>{newCount}</strong></div><div><span>Commandes actives</span><strong>{orders.length}</strong></div><div><span>Chiffre d’affaires livré</span><strong>{money(completedOrders.reduce((sum, order) => sum + Number(order.total || 0), 0))}</strong></div><div><span>Marge des commandes livrées</span><strong>{canEstimateMargin ? money(totalMargin) : completedOrders.length ? 'À compléter' : money(0)}</strong></div></div>
           <div className="orders-toolbar"><div className="orders-filters"><button className={filter === 'all' ? 'active' : ''} onClick={() => setFilter('all')}>Toutes ({orders.length})</button><button className={filter === 'new' ? 'active' : ''} onClick={() => setFilter('new')}>Nouvelles ({newCount})</button><button className={filter === 'confirmed' ? 'active' : ''} onClick={() => setFilter('confirmed')}>Confirmées</button><button className={filter === 'shipped' ? 'active' : ''} onClick={() => setFilter('shipped')}>Expédiées</button></div><span className="sync-indicator"><i /> Actualisation automatique · 15 s</span></div>
-          {visibleOrders.length ? <div className="orders-list">{visibleOrders.map(order => (
+          {visibleOrders.length ? <div className="orders-list">{visibleOrders.map(order => {
+          const confirmationMessage = confirmationDrafts[order.id] ?? defaultConfirmationMessage(order);
+          return (
           <article className="order-card" key={order.id}>
             <div className="order-card-top"><div><span className="order-number">COMMANDE · {String(order.id).slice(0, 8).toUpperCase()}</span><time>{date(order.created_at)}</time></div><span className={`order-status status-${order.status}`}>{statusLabels[order.status] || order.status}</span></div>
-            <div className="order-card-content"><div className="order-customer"><strong>{order.customer_name}</strong><a href={`tel:${order.phone}`}>{order.phone} ↗</a><span>{order.city}</span><a className="order-whatsapp" href={`https://wa.me/${String(order.phone).replace(/\D/g, '')}?text=${encodeURIComponent(`Bonjour ${order.customer_name}, nous confirmons votre commande Crooza. Merci de nous envoyer votre adresse complète ou le point relais souhaité.`)}`} target="_blank" rel="noreferrer">Contacter sur WhatsApp ↗</a>{order.status === 'new' && <button className="order-confirm-button" type="button" onClick={() => confirmOrder(order)} disabled={confirmingOrderId === order.id}>{confirmingOrderId === order.id ? 'Confirmation…' : 'Confirmer + message WhatsApp ↗'}</button>}{order.status === 'confirmed' && <button className="order-label-button" type="button" onClick={() => { setLabelOrder(order); setLabelAddress(order.delivery_address || ''); }}>Préparer l’étiquette d’envoi ↗</button>}</div><div className="order-items">{(order.items || []).map(item => <div className="order-item" key={`${item.id}-${item.size || 'one'}-${item.free_quantity ? 'gift' : 'paid'}`}><img src={item.image || '/images/crooza-mark.png'} alt="" /><span>{item.name} <small>{item.free_quantity && Number(item.paid_quantity) === 0 ? `× ${item.quantity} · cadeau offert` : `× ${item.paid_quantity ?? item.quantity}${item.size ? ` · pointure ${item.size}` : ''}${item.free_quantity ? ` + ${item.free_quantity} offerte${item.free_quantity > 1 ? 's' : ''}` : ''}`}</small></span><strong>{money(item.unit_price * (item.paid_quantity ?? item.quantity))}</strong></div>)}</div><div className="order-costs"><span>Sous-total<strong>{money(order.subtotal)}</strong></span><span>{Number(order.shipping_fee) === 0 ? 'Livraison offerte' : 'Livraison payée'}<strong>{Number(order.shipping_fee) === 0 ? 'Offerte' : money(order.shipping_fee)}</strong></span><label>Statut<select value={order.status} onChange={event => updateStatus(order.id, event.target.value)} aria-label={`Statut de la commande ${String(order.id).slice(0, 8)}`}>{statusOptions.map(status => <option value={status} key={status}>{statusLabels[status]}</option>)}</select></label></div><OrderFinance order={order} onSaveExpenses={saveDeliveryExpenses} onDelete={deleteOrder} /></div>
+            <div className="order-card-content"><div className="order-customer"><strong>{order.customer_name}</strong><a href={`tel:${order.phone}`}>{order.phone} ↗</a><span>{order.city}</span><a className="order-whatsapp" href={whatsappLink(order.phone, `Bonjour ${order.customer_name}, nous confirmons votre commande Crooza. Merci de nous envoyer votre adresse complète ou le point relais souhaité.`)} target="_blank" rel="noreferrer">Contacter sur WhatsApp ↗</a>{order.status === 'new' && <><details className="order-message-editor"><summary>Modifier le message de confirmation</summary><textarea aria-label={`Message WhatsApp pour ${order.customer_name}`} value={confirmationMessage} onChange={event => setConfirmationDrafts(current => ({ ...current, [order.id]: event.target.value }))} rows={7} maxLength={1800} /></details><a className={`order-confirm-button ${confirmingOrderId === order.id ? 'is-loading' : ''}`} href={whatsappLink(order.phone, confirmationMessage)} target="_blank" rel="noreferrer" aria-disabled={confirmingOrderId === order.id} onClick={event => { if (confirmingOrderId === order.id) event.preventDefault(); else confirmOrder(order); }}>{confirmingOrderId === order.id ? 'Confirmation…' : 'Confirmer + envoyer le message ↗'}</a></>}{order.status === 'confirmed' && <button className="order-label-button" type="button" onClick={() => { setLabelOrder(order); setLabelAddress(order.delivery_address || ''); }}>Préparer l’étiquette d’envoi ↗</button>}</div><div className="order-items">{(order.items || []).map(item => <div className="order-item" key={`${item.id}-${item.size || 'one'}-${item.free_quantity ? 'gift' : 'paid'}`}><img src={item.image || '/images/crooza-mark.png'} alt="" /><span>{item.name} <small>{item.free_quantity && Number(item.paid_quantity) === 0 ? `× ${item.quantity} · cadeau offert` : `× ${item.paid_quantity ?? item.quantity}${item.size ? ` · pointure ${item.size}` : ''}${item.free_quantity ? ` + ${item.free_quantity} offerte${item.free_quantity > 1 ? 's' : ''}` : ''}`}</small></span><strong>{money(item.unit_price * (item.paid_quantity ?? item.quantity))}</strong></div>)}</div><div className="order-costs"><span>Sous-total<strong>{money(order.subtotal)}</strong></span><span>{Number(order.shipping_fee) === 0 ? 'Livraison offerte' : 'Livraison payée'}<strong>{Number(order.shipping_fee) === 0 ? 'Offerte' : money(order.shipping_fee)}</strong></span><label>Statut<select value={order.status} onChange={event => updateStatus(order.id, event.target.value)} aria-label={`Statut de la commande ${String(order.id).slice(0, 8)}`}>{statusOptions.map(status => <option value={status} key={status}>{statusLabels[status]}</option>)}</select></label></div><OrderFinance order={order} onSaveExpenses={saveDeliveryExpenses} onDelete={deleteOrder} /></div>
           </article>
-          ))}</div> : <div className="orders-empty"><span>✳</span><h2>{loading ? 'Chargement…' : filter === 'all' ? 'Aucune commande pour le moment.' : 'Aucune commande dans ce filtre.'}</h2><p>Les commandes passées sur votre boutique apparaîtront ici.</p></div>}
+          );
+          })}</div> : <div className="orders-empty"><span>✳</span><h2>{loading ? 'Chargement…' : filter === 'all' ? 'Aucune commande pour le moment.' : 'Aucune commande dans ce filtre.'}</h2><p>Les commandes passées sur votre boutique apparaîtront ici.</p></div>}
         </> : <div className="analytics-view">
           <div className="orders-title-row"><div><p className="eyebrow"><span className="eyebrow-line" /> VOTRE BOUTIQUE · MAROC</p><h1>Votre trafic <em>en un coup d’œil.</em></h1><p>Statistiques des 30 derniers jours · données anonymes de première partie.</p></div><button className="refresh-button" type="button" onClick={refreshAnalytics}>↻ Actualiser</button></div>
           {analyticsError && <div className="admin-error orders-error" role="alert">{analyticsError}</div>}

@@ -399,7 +399,9 @@ button:focus-visible,a:focus-visible,input:focus-visible,textarea:focus-visible,
 
 /* Keep long product lists responsive by deferring off-screen card painting. */
 .product-card{animation:none;content-visibility:auto;contain-intrinsic-size:auto 470px}
-.order-confirm-button,.order-label-button{max-width:230px;padding:9px 10px;border:0;background:#292b26;color:#fff;font:500 9px var(--sans);text-align:left;cursor:pointer}
+.order-confirm-button,.order-label-button{display:inline-block;max-width:230px;padding:9px 10px;border:0;background:#292b26;color:#fff;font:500 9px var(--sans);text-align:left;text-decoration:none;cursor:pointer}
+.order-confirm-button.is-loading,.order-confirm-button[aria-disabled="true"]{opacity:.55;pointer-events:none}
+.order-message-editor{width:100%;max-width:330px;margin:8px 0}.order-message-editor summary{color:var(--accent);font-size:10px;text-decoration:underline;cursor:pointer}.order-message-editor textarea{width:100%;margin-top:8px;padding:10px;border:1px solid var(--line);background:#fff;color:var(--ink);font:12px/1.6 var(--sans);resize:vertical}
 .order-label-button{background:#eee8dc;color:#292b26}
 .order-confirm-button:disabled{opacity:.55;cursor:wait}
 .shipping-label-overlay{position:fixed;z-index:100;inset:0;display:grid;place-items:center;padding:20px;background:#17191499;overflow:auto}
@@ -506,6 +508,7 @@ button:focus-visible,a:focus-visible,input:focus-visible,textarea:focus-visible,
 .cart-gift-note,.cart-promo-hint{margin:0 0 14px;padding:11px 12px;background:#f0e7d9;color:#74503e;font-size:10px;line-height:1.6}
 .cart-promo-hint{background:#f8eee8;color:#866d62}
 .promotion-fields select{width:100%;min-width:0;border:1px solid var(--line);background:#fff;padding:9px;color:var(--ink);font-size:11px}
+.promotion-gift-picker{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}.promotion-gift-picker>label{display:flex;flex-direction:column;gap:6px;color:var(--muted);font-size:9px}.promotion-gift-picker select{width:100%;min-width:0;border:1px solid var(--line);background:#fff;padding:9px;color:var(--ink);font-size:11px}.promotion-gift-picker small{font-size:9px;line-height:1.45;color:var(--muted)}
 .promotion-count-fields{max-width:360px}
 .one-size-toggle{display:flex!important;flex-direction:row!important;align-items:center;gap:8px!important;color:var(--ink)!important;font-size:10px!important;cursor:pointer}
 .one-size-toggle input{width:17px;height:17px;accent-color:var(--accent)}
