@@ -7,7 +7,7 @@
   "textColor": "#292b26",
   "font": "Playfair Display",
   "logo": "/images/crooza-logo.png",
-  "announcement": "CROOZA · Livraison partout au Maroc",
+  "announcement": "🇲🇦 Livraison partout au Maroc • Découvre la collection CROOZA",
   "promotions": {
     "freeShipping": { "enabled": false },
     "promoPopup": { "enabled": false, "title": "Une offre Crooza", "message": "", "buttonLabel": "Découvrir les articles" },
