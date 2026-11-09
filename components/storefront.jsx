@@ -110,7 +110,7 @@ export default function Storefront({ initialStore }) {
   const giftProduct = store.products.find(product => String(product.id) === String(bundle?.freeProductId));
   const activePromotions = [
     store.promotions?.freeShipping?.enabled ? 'Livraison offerte partout au Maroc' : '',
-    bundle?.enabled ? `${bundle.label || `${bundle.buyQuantity} achetées`}${giftProduct ? ` + ${giftProduct.name} offert${Number(bundle.freeQuantity) > 1 ? 's' : 'e'}` : ''}` : '',
+    bundle?.enabled ? `${bundle.label || `${bundle.buyQuantity || 2} articles participants`}${giftProduct ? ` + ${giftProduct.name} offert${Number(bundle.freeQuantity) > 1 ? 's' : 'e'}` : ''}` : '',
   ].filter(Boolean);
   const promoMessage = promoPopup.message?.trim() || activePromotions.join(' · ') || 'Découvre notre sélection Crooza du moment.';
   const gallery = selected?.photos?.length ? selected.photos : selected?.image ? [selected.image] : [];

@@ -22,9 +22,12 @@ export default function CheckoutModal({ items, products, promotions = {}, checko
   const eligibleBuyItems = bundle.enabled ? cart.filter(item => eligibleBuyIds.has(String(item.productId))) : [];
   const eligibleBuyQuantity = eligibleBuyItems.reduce((total, item) => total + Number(item.quantity || 0), 0);
   const eligibleBuyNames = [...new Set(eligibleBuyItems.map(item => item.product.name))].join(', ');
+  const buyQuantity = Math.max(1, Number(bundle.buyQuantity) || 2);
+  const remainingForGift = eligibleBuyQuantity % buyQuantity;
+  const missingForGift = remainingForGift ? buyQuantity - remainingForGift : Math.max(0, buyQuantity - eligibleBuyQuantity);
   const giftProduct = byId.get(String(bundle.freeProductId));
-  const freeQuantity = bundle.enabled && giftProduct && eligibleBuyQuantity >= Number(bundle.buyQuantity || 2)
-    ? Math.floor(eligibleBuyQuantity / Math.max(1, Number(bundle.buyQuantity) || 2)) * Math.max(1, Number(bundle.freeQuantity) || 1)
+  const freeQuantity = bundle.enabled && giftProduct && eligibleBuyQuantity >= buyQuantity
+    ? Math.floor(eligibleBuyQuantity / buyQuantity) * Math.max(1, Number(bundle.freeQuantity) || 1)
     : 0;
   const freeShipping = promotions.freeShipping?.enabled === true;
   const shipping = useMemo(() => deliveryPrice(city, freeShipping), [city, freeShipping]);
@@ -99,7 +102,8 @@ export default function CheckoutModal({ items, products, promotions = {}, checko
               {!cart.length && <p className="cart-empty">Ton panier est vide. Retourne à la collection pour choisir des articles.</p>}
             </div>
             {freeQuantity > 0 && giftProduct && <div className="cart-gift-note">✳ Offre Crooza : <strong>{freeQuantity} {giftProduct.name}{bundle.freeProductSize ? ` · pointure ${bundle.freeProductSize}` : ''}</strong> offert{freeQuantity > 1 ? 's' : 'e'} avec {eligibleBuyQuantity} article{eligibleBuyQuantity > 1 ? 's' : ''} acheté{eligibleBuyQuantity > 1 ? 's' : ''}{eligibleBuyNames ? ` (${eligibleBuyNames})` : ''}.</div>}
-            {bundle.enabled && eligibleBuyItems.length > 0 && !freeQuantity && <p className="cart-promo-hint">Ajoute encore {Math.max(0, Number(bundle.buyQuantity || 2) - eligibleBuyQuantity)} article(s) concerné(s) pour recevoir {giftProduct?.name || 'le cadeau'} offert.</p>}
+            {bundle.enabled && eligibleBuyItems.length > 0 && <p className="cart-promo-hint">{freeQuantity > 0 ? `Offre débloquée : ${freeQuantity} ${giftProduct?.name || 'cadeau'} offert${freeQuantity > 1 ? 's' : ''}.` : `Il te manque ${missingForGift} article${missingForGift > 1 ? 's' : ''} éligible${missingForGift > 1 ? 's' : ''} pour recevoir ${giftProduct?.name || 'le cadeau'} offert.`} {eligibleBuyNames && <span>Articles concernés : {eligibleBuyNames}.</span>}</p>}
+            {bundle.enabled && !eligibleBuyItems.length && <p className="cart-promo-hint">Pour cette offre, ajoute {bundle.buyQuantity || 2} articles concernés : {eligibleBuyIds.size ? products.filter(product => eligibleBuyIds.has(String(product.id))).map(product => product.name).join(', ') : 'voir les produits participants'}.</p>}
             {!checkoutMode ? <><button className="button button-dark checkout-next-step" type="button" onClick={() => onCheckoutModeChange?.(true)} disabled={!cart.length}>Commander maintenant <span>→</span></button><button className="checkout-back-to-cart" type="button" onClick={onClose}>Continuer mes achats</button></> : <form className="checkout-form" onSubmit={submit}>
               <label>Votre nom complet<input name="name" autoComplete="name" required minLength={2} maxLength={100} placeholder="Ex. Sara El Amrani" /></label>
               <label>Votre téléphone<input name="phone" type="tel" autoComplete="tel" inputMode="tel" required pattern="[+0-9 ()().-]{9,20}" placeholder="06 12 34 56 78" /></label>
