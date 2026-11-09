@@ -210,13 +210,18 @@ export default function AdminPanel({ open, onClose, authenticated, onAuthenticat
     const form = new FormData(event.currentTarget);
     try {
       const enabled = form.get('bundleEnabled') === 'on';
-      const buyProductId = String(form.get('buyProductId') || '');
+      const buyProductIds = [...new Set(form.getAll('buyProductIds').map(value => String(value)))];
+      const buyProductId = buyProductIds[0] || '';
       const freeProductId = String(form.get('freeProductId') || '');
       if (enabled) {
-        if (!buyProductId || !freeProductId || buyProductId === freeProductId) throw new Error('Choisis deux produits différents pour l’offre.');
+        if (!buyProductIds.length || !freeProductId || buyProductIds.includes(freeProductId)) throw new Error('Choisis au moins un produit à acheter et un cadeau différent.');
         const giftProduct = store.products.find(product => String(product.id) === freeProductId);
         if (!giftProduct?.oneSize) throw new Error('Le produit offert doit être configuré sans pointure, par exemple un pin Crocs.');
       }
+      let popupImage = String(store.promotions?.promoPopup?.image || '');
+      const popupImageFile = form.get('popupImageFile');
+      if (popupImageFile?.size) popupImage = await upload(popupImageFile);
+      if (form.get('popupRemoveImage') === 'on') popupImage = '';
       const promotions = {
         freeShipping: { enabled: form.get('freeShipping') === 'on' },
         promoPopup: {
@@ -224,11 +229,13 @@ export default function AdminPanel({ open, onClose, authenticated, onAuthenticat
           title: String(form.get('popupTitle') || '').trim().slice(0, 60),
           message: String(form.get('popupMessage') || '').trim().slice(0, 180),
           buttonLabel: String(form.get('popupButtonLabel') || '').trim().slice(0, 32) || 'Découvrir les articles',
+          image: popupImage,
         },
         buyXGetY: {
           enabled,
           buyQuantity: Math.min(10, Math.max(1, Number.parseInt(form.get('buyQuantity'), 10) || 2)),
           freeQuantity: Math.min(5, Math.max(1, Number.parseInt(form.get('freeQuantity'), 10) || 1)),
+          buyProductIds,
           buyProductId,
           freeProductId,
           label: String(form.get('bundleLabel') || '').trim().slice(0, 60),
@@ -317,8 +324,9 @@ export default function AdminPanel({ open, onClose, authenticated, onAuthenticat
                     <span className="promotion-badge">Offre boutique</span>
                   </section>
                   <section className="promotion-card promotion-bundle">
-                    <label className="promotion-toggle"><input name="bundleEnabled" type="checkbox" defaultChecked={store.promotions?.buyXGetY?.enabled === true} /><span><strong>Achetés + offerts</strong><small>Choisis le produit déclencheur et un cadeau différent. Le cadeau doit être un article sans pointure, comme un pin Crocs.</small></span></label>
-                    <div className="promotion-fields"><label>Produit à acheter<select name="buyProductId" defaultValue={store.promotions?.buyXGetY?.buyProductId || ''}><option value="">Choisir un produit</option>{store.products.map(product => <option value={product.id} key={product.id}>{product.name}</option>)}</select></label><span className="promotion-plus">→</span><label>Produit offert<select name="freeProductId" defaultValue={store.promotions?.buyXGetY?.freeProductId || ''}><option value="">Choisir le cadeau</option>{store.products.map(product => <option value={product.id} key={product.id}>{product.name}{product.oneSize ? '' : ' · nécessite une pointure'}</option>)}</select></label></div>
+                    <label className="promotion-toggle"><input name="bundleEnabled" type="checkbox" defaultChecked={store.promotions?.buyXGetY?.enabled === true} /><span><strong>Achetés + offerts</strong><small>Sélectionne un ou plusieurs produits qui déclenchent l’offre, puis choisis un cadeau différent. Le cadeau doit être un article sans pointure, comme un pin Crocs.</small></span></label>
+                    <fieldset className="promo-product-picker"><legend>Produits concernés</legend><p>Le nombre d’articles choisis parmi ces produits est additionné pour atteindre l’offre.</p><div>{store.products.map(product => <label key={product.id}><input name="buyProductIds" type="checkbox" value={product.id} defaultChecked={(store.promotions?.buyXGetY?.buyProductIds || [store.promotions?.buyXGetY?.buyProductId].filter(Boolean)).map(String).includes(String(product.id))} /><span>{product.name}</span></label>)}</div></fieldset>
+                    <div className="promotion-fields"><label>Produit offert<select name="freeProductId" defaultValue={store.promotions?.buyXGetY?.freeProductId || ''}><option value="">Choisir le cadeau</option>{store.products.map(product => <option value={product.id} key={product.id}>{product.name}{product.oneSize ? '' : ' · nécessite une pointure'}</option>)}</select></label></div>
                     <div className="promotion-fields promotion-count-fields"><label>Quantité à acheter<input name="buyQuantity" type="number" min="1" max="10" required defaultValue={store.promotions?.buyXGetY?.buyQuantity ?? 2} /></label><span className="promotion-plus">+</span><label>Nombre de cadeaux<input name="freeQuantity" type="number" min="1" max="5" required defaultValue={store.promotions?.buyXGetY?.freeQuantity ?? 1} /></label></div>
                     <label>Texte de l’offre (facultatif)<input name="bundleLabel" maxLength={60} placeholder="Ex. 2 achetées, 1 offerte" defaultValue={store.promotions?.buyXGetY?.label || ''} /></label>
                   </section>
@@ -328,6 +336,8 @@ export default function AdminPanel({ open, onClose, authenticated, onAuthenticat
                       <label>Titre<input name="popupTitle" maxLength={60} defaultValue={store.promotions?.promoPopup?.title || 'Une offre Crooza'} placeholder="Une offre Crooza" /></label>
                       <label>Message<textarea name="popupMessage" rows="3" maxLength={180} defaultValue={store.promotions?.promoPopup?.message || ''} placeholder="Laisse vide pour afficher automatiquement les promotions actives." /></label>
                       <label>Texte du bouton<input name="popupButtonLabel" maxLength={32} defaultValue={store.promotions?.promoPopup?.buttonLabel || 'Découvrir les articles'} /></label>
+                      <label>Image de l’affiche<input name="popupImageFile" type="file" accept="image/png,image/jpeg,image/webp,image/gif" /></label>
+                      {store.promotions?.promoPopup?.image && <div className="promotion-poster-preview"><img src={store.promotions.promoPopup.image} alt="Affiche promotionnelle actuelle" /><label><input type="checkbox" name="popupRemoveImage" /> Retirer l’affiche actuelle</label></div>}
                     </div>
                   </section>
                   <button className="button button-dark" type="submit" disabled={busy}>{busy ? 'Enregistrement…' : 'Enregistrer les promotions ↗'}</button>

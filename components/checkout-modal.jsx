@@ -18,7 +18,10 @@ export default function CheckoutModal({ items, products, promotions = {}, onUpda
   const byId = new Map(products.map(product => [String(product.id), product]));
   const cart = items.map(item => ({ ...item, product: byId.get(String(item.productId)) })).filter(item => item.product);
   const bundle = promotions.buyXGetY || {};
-  const eligibleBuyQuantity = bundle.enabled ? cart.filter(item => String(item.productId) === String(bundle.buyProductId)).reduce((total, item) => total + Number(item.quantity || 0), 0) : 0;
+  const eligibleBuyIds = new Set((Array.isArray(bundle.buyProductIds) && bundle.buyProductIds.length ? bundle.buyProductIds : [bundle.buyProductId].filter(Boolean)).map(String));
+  const eligibleBuyItems = bundle.enabled ? cart.filter(item => eligibleBuyIds.has(String(item.productId))) : [];
+  const eligibleBuyQuantity = eligibleBuyItems.reduce((total, item) => total + Number(item.quantity || 0), 0);
+  const eligibleBuyNames = [...new Set(eligibleBuyItems.map(item => item.product.name))].join(', ');
   const giftProduct = byId.get(String(bundle.freeProductId));
   const freeQuantity = bundle.enabled && giftProduct && eligibleBuyQuantity >= Number(bundle.buyQuantity || 2)
     ? Math.floor(eligibleBuyQuantity / Math.max(1, Number(bundle.buyQuantity) || 2)) * Math.max(1, Number(bundle.freeQuantity) || 1)
@@ -94,8 +97,8 @@ export default function CheckoutModal({ items, products, promotions = {}, onUpda
               })}
               {!cart.length && <p className="cart-empty">Ton panier est vide. Retourne à la collection pour choisir des articles.</p>}
             </div>
-            {freeQuantity > 0 && giftProduct && <div className="cart-gift-note">✳ Offre Crooza : <strong>{freeQuantity} {giftProduct.name}</strong> offert{freeQuantity > 1 ? 's' : 'e'} avec {eligibleBuyQuantity} {byId.get(String(bundle.buyProductId))?.name} acheté{eligibleBuyQuantity > 1 ? 's' : ''}.</div>}
-            {bundle.enabled && cart.some(item => String(item.productId) === String(bundle.buyProductId)) && !freeQuantity && <p className="cart-promo-hint">Ajoute encore {Math.max(0, Number(bundle.buyQuantity || 2) - eligibleBuyQuantity)} article(s) pour recevoir {giftProduct?.name || 'le cadeau'} offert.</p>}
+            {freeQuantity > 0 && giftProduct && <div className="cart-gift-note">✳ Offre Crooza : <strong>{freeQuantity} {giftProduct.name}</strong> offert{freeQuantity > 1 ? 's' : 'e'} avec {eligibleBuyQuantity} article{eligibleBuyQuantity > 1 ? 's' : ''} acheté{eligibleBuyQuantity > 1 ? 's' : ''}{eligibleBuyNames ? ` (${eligibleBuyNames})` : ''}.</div>}
+            {bundle.enabled && eligibleBuyItems.length > 0 && !freeQuantity && <p className="cart-promo-hint">Ajoute encore {Math.max(0, Number(bundle.buyQuantity || 2) - eligibleBuyQuantity)} article(s) concerné(s) pour recevoir {giftProduct?.name || 'le cadeau'} offert.</p>}
             <form className="checkout-form" onSubmit={submit}>
               <label>Votre nom complet<input name="name" autoComplete="name" required minLength={2} maxLength={100} placeholder="Ex. Sara El Amrani" /></label>
               <label>Votre téléphone<input name="phone" type="tel" autoComplete="tel" inputMode="tel" required pattern="[+0-9 ()().-]{9,20}" placeholder="06 12 34 56 78" /></label>
