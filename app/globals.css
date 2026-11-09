@@ -509,8 +509,7 @@ button:focus-visible,a:focus-visible,input:focus-visible,textarea:focus-visible,
 .cart-remove{border:0;background:none;color:#9a6254;font-size:20px;line-height:1;cursor:pointer}
 .cart-empty{padding:16px;color:var(--muted);font-size:11px;text-align:center;background:#f0ede6}
 .checkout-step-note{margin:-8px 0 16px;color:var(--muted);font-size:11px;line-height:1.6}.checkout-next-step{width:100%;min-height:48px;display:flex;justify-content:space-between;align-items:center;margin:8px 0 3px;padding:0 14px;border:0;cursor:pointer}.checkout-next-step:disabled{opacity:.45;cursor:not-allowed}.checkout-back-to-cart{border:0;background:none;color:var(--muted);font-size:10px;text-decoration:underline;cursor:pointer;padding:4px}.detail-help{max-width:340px}
-.cart-gift-note,.cart-promo-hint{margin:0 0 14px;padding:11px 12px;background:#f0e7d9;color:#74503e;font-size:10px;line-height:1.6}
-.cart-promo-hint{background:#f8eee8;color:#866d62}
+.cart-promo-success{margin:0 0 14px;padding:10px 12px;border:1px solid #cfe4d4;border-radius:6px;background:#edf7ef;color:#27683d;font-size:11px;line-height:1.5}
 .promotion-fields select{width:100%;min-width:0;border:1px solid var(--line);background:#fff;padding:9px;color:var(--ink);font-size:11px}
 .promotion-gift-picker{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}.promotion-gift-picker>label{display:flex;flex-direction:column;gap:6px;color:var(--muted);font-size:9px}.promotion-gift-picker select{width:100%;min-width:0;border:1px solid var(--line);background:#fff;padding:9px;color:var(--ink);font-size:11px}.promotion-gift-picker small{font-size:9px;line-height:1.45;color:var(--muted)}
 .promotion-count-fields{max-width:360px}
