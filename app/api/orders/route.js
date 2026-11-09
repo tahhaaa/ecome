@@ -1,6 +1,7 @@
 import { createHash, randomBytes } from 'node:crypto';
 import { db } from '../../../lib/vercel/supabase.js';
 import { hasAdminSession } from '../../../lib/auth.js';
+import { getRawStore } from '../../../lib/store.js';
 
 export const runtime = 'nodejs';
 
@@ -46,6 +47,23 @@ export async function POST(request) {
       }),
     });
     if (!createdOrder?.id) throw new Error('Supabase n’a pas retourné la commande enregistrée.');
+
+    try {
+      const expenseDefaults = (await getRawStore()).orderExpenseDefaults || {};
+      const defaultExpenses = [
+        { key: 'shipping', label: 'Livraison' },
+        { key: 'packaging', label: 'Emballage' },
+      ].filter(item => expenseDefaults[item.key]?.enabled === true)
+        .map(item => ({ id: randomBytes(8).toString('hex'), label: item.label, amount: Number(expenseDefaults[item.key].amount), created_at: new Date().toISOString() }))
+        .filter(item => Number.isFinite(item.amount) && item.amount > 0 && item.amount <= 1_000_000);
+      if (defaultExpenses.length) {
+        await db(`shop_orders?id=eq.${encodeURIComponent(String(createdOrder.id))}&deleted_at=is.null`, {
+          method: 'PATCH', headers: { Prefer: 'return=minimal' }, body: JSON.stringify({ delivery_expenses: defaultExpenses }),
+        });
+      }
+    } catch (expenseError) {
+      console.error('Default order expenses could not be applied:', expenseError.message);
+    }
 
     try {
       await sendOrderPush(createdOrder, customerName, `${createdOrder.product_name}${createdOrder.free_quantity ? ` · cadeau : ${createdOrder.free_product_name}` : ''}`);

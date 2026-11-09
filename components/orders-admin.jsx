@@ -58,6 +58,8 @@ export default function OrdersAdmin() {
   const [filter, setFilter] = useState('all');
   const [pushState, setPushState] = useState('idle');
   const [shopStore, setShopStore] = useState(null);
+  const [expenseDefaultsDraft, setExpenseDefaultsDraft] = useState(null);
+  const [savingExpenseDefaults, setSavingExpenseDefaults] = useState(false);
   const [editorOpen, setEditorOpen] = useState(false);
   const [view, setView] = useState('orders');
   const [analytics, setAnalytics] = useState(null);
@@ -69,6 +71,11 @@ export default function OrdersAdmin() {
   const [labelAddress, setLabelAddress] = useState('');
   const [savingLabel, setSavingLabel] = useState(false);
   const knownOrders = useRef(null);
+  const savedExpenseDefaults = shopStore?.orderExpenseDefaults || {};
+  const activeExpenseDefaults = expenseDefaultsDraft || {
+    shipping: { enabled: savedExpenseDefaults.shipping?.enabled === true, amount: Number(savedExpenseDefaults.shipping?.amount) > 0 ? Number(savedExpenseDefaults.shipping.amount) : 35 },
+    packaging: { enabled: savedExpenseDefaults.packaging?.enabled === true, amount: Number(savedExpenseDefaults.packaging?.amount) > 0 ? Number(savedExpenseDefaults.packaging.amount) : 2 },
+  };
 
   const refresh = useCallback(async (notifyNew = false) => {
     try {
@@ -234,6 +241,19 @@ export default function OrdersAdmin() {
     setShopStore(next);
   }
 
+  async function saveOrderExpenseDefaults() {
+    setSavingExpenseDefaults(true);
+    setError('');
+    try {
+      const normalizedDefaults = Object.fromEntries(Object.entries(activeExpenseDefaults).map(([key, value]) => [key, { enabled: value.enabled === true, amount: Number(value.amount) }]));
+      if (Object.values(normalizedDefaults).some(value => value.enabled && (!Number.isFinite(value.amount) || value.amount <= 0 || value.amount > 1_000_000))) throw new Error('Saisis un montant supérieur à 0 DH pour chaque frais activé.');
+      await saveShopStore({ ...shopStore, orderExpenseDefaults: normalizedDefaults });
+      setExpenseDefaultsDraft(normalizedDefaults);
+      setNotice('Préférences enregistrées. Ces frais seront cochés sur les prochaines commandes.');
+    } catch (saveError) { setError(saveError.message); }
+    finally { setSavingExpenseDefaults(false); }
+  }
+
   const visibleOrders = filter === 'all' ? orders : orders.filter(order => order.status === filter);
   const newCount = orders.filter(order => order.status === 'new').length;
   const completedOrders = orders.filter(order => order.status === 'completed');
@@ -271,6 +291,7 @@ export default function OrdersAdmin() {
         {view === 'orders' ? <>
           <div className="orders-title-row"><div><p className="eyebrow"><span className="eyebrow-line" /> VOTRE BOUTIQUE · MAROC</p><h1>Commandes <em>reçues.</em></h1><p>Les nouvelles commandes se synchronisent automatiquement.</p></div><button className="refresh-button" type="button" onClick={() => refresh()} disabled={loading}>↻ Actualiser</button></div>
           <div className="orders-stats"><div><span>À traiter</span><strong>{newCount}</strong></div><div><span>Commandes actives</span><strong>{orders.length}</strong></div><div><span>Chiffre d’affaires livré</span><strong>{money(completedOrders.reduce((sum, order) => sum + Number(order.total || 0), 0))}</strong></div><div><span>Marge des commandes livrées</span><strong>{canEstimateMargin ? money(totalMargin) : completedOrders.length ? 'À compléter' : money(0)}</strong></div></div>
+          {shopStore && <section className="default-expense-settings"><div><strong>Frais automatiques des prochaines commandes</strong><p>Coche les frais à appliquer par défaut. Ils seront ajoutés aux commandes futures et resteront modifiables dans chaque commande.</p></div><div className="default-expense-options">{[{ key: 'shipping', label: 'Livraison' }, { key: 'packaging', label: 'Emballage' }].map(item => <label key={item.key}><input type="checkbox" checked={activeExpenseDefaults[item.key].enabled} onChange={event => setExpenseDefaultsDraft(current => ({ ...(current || activeExpenseDefaults), [item.key]: { ...activeExpenseDefaults[item.key], enabled: event.target.checked } }))} /><span>{item.label}</span><input aria-label={`Montant par défaut ${item.label}`} type="number" min="0.01" max="1000000" step="0.01" value={activeExpenseDefaults[item.key].amount} onChange={event => setExpenseDefaultsDraft(current => ({ ...(current || activeExpenseDefaults), [item.key]: { ...activeExpenseDefaults[item.key], amount: event.target.value } }))} /><b>DH</b></label>)}</div><button type="button" className="refresh-button" onClick={saveOrderExpenseDefaults} disabled={savingExpenseDefaults}>{savingExpenseDefaults ? 'Enregistrement…' : 'Enregistrer les frais par défaut'}</button></section>}
           <div className="orders-toolbar"><div className="orders-filters"><button className={filter === 'all' ? 'active' : ''} onClick={() => setFilter('all')}>Toutes ({orders.length})</button><button className={filter === 'new' ? 'active' : ''} onClick={() => setFilter('new')}>Nouvelles ({newCount})</button><button className={filter === 'confirmed' ? 'active' : ''} onClick={() => setFilter('confirmed')}>Confirmées</button><button className={filter === 'shipped' ? 'active' : ''} onClick={() => setFilter('shipped')}>Expédiées</button></div><span className="sync-indicator"><i /> Actualisation automatique · 15 s</span></div>
           {visibleOrders.length ? <div className="orders-list">{visibleOrders.map(order => {
           const confirmationMessage = confirmationDrafts[order.id] ?? defaultConfirmationMessage(order);
