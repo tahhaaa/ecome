@@ -17,6 +17,14 @@ function money(value) {
 
 export default function Storefront({ initialStore }) {
   const store = initialStore;
+  const logoSrc = !store.logo || store.logo.endsWith('/6e572bbd-abe7-474e-9fda-9c5f851486b9.png') ? '/images/crooza-logo.png' : store.logo;
+  const previousCollectionTitles = ['Trouve|ta|paire|préférée', 'Nos pièces|préférées.'];
+  const previousCollectionNotes = [
+    'Des modèles incontournables, des couleurs qui matchent avec ton style et un confort pensé pour tous les jours. Choisis ton modèle CROOZA.',
+    'De jolies trouvailles à garder longtemps.|La collection évolue au fil des coups de cœur.',
+  ];
+  const collectionTitle = previousCollectionTitles.includes(store.collectionTitle) ? 'Nouvelles tendances' : store.collectionTitle || 'Nouvelles tendances';
+  const collectionNote = previousCollectionNotes.includes(store.collectionNote) ? 'Découvre les dernières tendances Crooza et trouve la paire qui complète ton style.' : store.collectionNote || 'Découvre les dernières tendances Crooza et trouve la paire qui complète ton style.';
   const [selected, setSelected] = useState(null);
   const [photoIndex, setPhotoIndex] = useState(0);
   const [cartItems, setCartItems] = useState([]);
@@ -94,9 +102,8 @@ export default function Storefront({ initialStore }) {
     <div className="shop-shell buyer-v2" style={{ '--accent': store.accent || fallback.accent, '--paper': store.background || fallback.background, '--ink': store.textColor || fallback.textColor, '--serif': `'${fontName}', Georgia, serif` }}>
       {store.announcement && <div className="buyer-announcement">{store.announcement}</div>}
       <header className="buyer-header">
-        <a className="buyer-brand" href="#top" aria-label={store.brand}>
-          <img src={store.logo || '/images/crooza-mark.png'} alt="" />
-          <span>{store.brand || fallback.brand}<small>Chaussures & accessoires</small></span>
+        <a className="buyer-brand" href="#top" aria-label="Crooza — accueil">
+          <img src={logoSrc} alt="Logo Crooza" />
         </a>
         <nav className="buyer-nav" aria-label="Navigation principale"><a href="#collection">Boutique</a><a href="#faq">FAQ</a></nav>
         <button className="buyer-cart-button" type="button" onClick={() => setCartOpen(true)} aria-label={`Ouvrir le panier, ${cartCount} article${cartCount === 1 ? '' : 's'}`}>
@@ -107,7 +114,7 @@ export default function Storefront({ initialStore }) {
       <main id="top" className="buyer-main">
         <section className="buyer-catalog" id="collection">
           <div className="buyer-catalog-heading">
-            <div><span className="buyer-kicker">CROOZA · MAROC</span><h1>{String(store.collectionTitle || 'La collection').replaceAll('|', ' ')}</h1><p>{store.collectionNote || store.description}</p></div>
+            <div><span className="buyer-kicker">CROOZA · MAROC</span><h1>{String(collectionTitle).replaceAll('|', ' ')}</h1><p>{String(collectionNote).replaceAll('|', ' ')}</p></div>
             <span className="buyer-count">{filteredProducts.length} article{filteredProducts.length === 1 ? '' : 's'}</span>
           </div>
           {activePromotions.length > 0 && <div className="buyer-promo-bar">{activePromotions.map((promotion, index) => <span key={`${promotion}-${index}`}><i>✳</i>{promotion}</span>)}</div>}
@@ -141,7 +148,14 @@ export default function Storefront({ initialStore }) {
         </section>
       </main>
 
-      <footer className="buyer-footer"><a className="buyer-brand" href="#top"><img src={store.logo || '/images/crooza-mark.png'} alt="" /><span>{store.brand || fallback.brand}<small>Fait avec attention, au Maroc.</small></span></a><span>© {new Date().getFullYear()} · Tous droits réservés</span><a href={waIntro} target="_blank" rel="noreferrer">Contact WhatsApp ↗</a></footer>
+      <footer className="buyer-footer">
+        <a className="buyer-brand" href="#top" aria-label="Retour en haut — Crooza"><img src={logoSrc} alt="Logo Crooza" /></a>
+        <span>© {new Date().getFullYear()} · Tous droits réservés</span>
+        <div className="buyer-socials" aria-label="Réseaux sociaux Crooza">
+          <a href="https://www.instagram.com/crooza.ma/" target="_blank" rel="noreferrer" aria-label="Instagram Crooza"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="5"/><circle cx="12" cy="12" r="4"/><circle className="social-dot" cx="17.5" cy="6.5" r=".8"/></svg><span>Instagram</span></a>
+          <a href="https://www.tiktok.com/@crooza.ma" target="_blank" rel="noreferrer" aria-label="TikTok Crooza"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M14 3v11.2a4.2 4.2 0 1 1-3.6-4.15v3.1a1.2 1.2 0 1 0 .6 1.05V3h3c.2 2.5 1.7 4.4 4.1 4.8v3.1A8.1 8.1 0 0 1 14 9.2"/></svg><span>TikTok</span></a>
+        </div>
+      </footer>
       <a className="floating-wa" href={waIntro} target="_blank" rel="noreferrer" aria-label="Nous écrire sur WhatsApp"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20.5 3.5A11.8 11.8 0 0 0 12.1 0C5.6 0 .3 5.3.3 11.8c0 2.1.6 4.2 1.6 6L0 24l6.4-1.7a11.9 11.9 0 0 0 5.7 1.5h.1c6.5 0 11.8-5.3 11.8-11.8 0-3.2-1.2-6.2-3.5-8.5ZM12.1 21.8a9.9 9.9 0 0 1-5.1-1.4l-.4-.2-3.8 1 1-3.7-.3-.4a9.9 9.9 0 0 1-1.5-5.3c0-5.5 4.5-10 10-10 2.7 0 5.2 1 7.1 2.9a10 10 0 0 1 2.9 7.1c0 5.5-4.5 10-10 10Zm5.5-7.5c-.3-.1-1.7-.8-2-.9-.3-.1-.5-.1-.7.2-.2.3-.8.9-.9 1.1-.2.2-.3.2-.6.1-.3-.1-1.2-.5-2.4-1.5-.9-.8-1.5-1.8-1.7-2.1-.2-.3 0-.4.1-.6.1-.1.3-.3.4-.5.1-.2.2-.3.3-.5.1-.2 0-.4 0-.5-.1-.1-.7-1.6-.9-2.2-.2-.6-.5-.5-.7-.5h-.6c-.2 0-.5.1-.8.4-.3.3-1 1-1 2.4s1 2.8 1.1 3c.1.2 2 3.1 4.8 4.3.7.3 1.2.5 1.7.6.7.2 1.3.2 1.8.1.6-.1 1.7-.7 1.9-1.4.2-.7.2-1.3.2-1.4-.1-.1-.3-.2-.6-.4Z" /></svg></a>
 
       {selected && <div className="detail-overlay open" onMouseDown={event => event.target === event.currentTarget && setSelected(null)}><section className="detail-panel" role="dialog" aria-modal="true" aria-label={`Détail : ${selected.name}`}><button className="icon-button detail-close" type="button" onClick={() => setSelected(null)} aria-label="Fermer">×</button><div className="detail-gallery"><div className="detail-main-image"><img src={gallery[photoIndex]} alt={`${selected.name} — photo ${photoIndex + 1}`} /><button className="gallery-arrow gallery-prev" type="button" aria-label="Photo précédente" hidden={gallery.length < 2} onClick={() => setPhotoIndex(index => (index - 1 + gallery.length) % gallery.length)}>←</button><button className="gallery-arrow gallery-next" type="button" aria-label="Photo suivante" hidden={gallery.length < 2} onClick={() => setPhotoIndex(index => (index + 1) % gallery.length)}>→</button><span className="gallery-count">{photoIndex + 1} / {gallery.length}</span></div><div className="detail-thumbnails">{gallery.length > 1 && gallery.map((photo, index) => <button className={`detail-thumb ${index === photoIndex ? 'active' : ''}`} type="button" key={photo} onClick={() => setPhotoIndex(index)} aria-label={`Afficher la photo ${index + 1}`}><img src={photo} alt="" /></button>)}</div></div><div className="detail-copy"><p className="eyebrow"><span className="eyebrow-line" /> {selected.inStock === false ? 'Épuisé' : selected.tag || 'À découvrir'}</p><h2>{selected.name}</h2><p className="detail-price">{money(selected.price)}</p><p className="detail-description">{selected.description}</p><button className="button button-dark detail-order" type="button" onClick={() => addToCart(selected)} disabled={selected.inStock === false}>{selected.inStock === false ? 'Indisponible' : 'Ajouter au panier'} <span>↗</span></button><p className="detail-help">Paiement à la livraison · livraison partout au Maroc.</p></div></section></div>}
