@@ -38,7 +38,7 @@ export default function Storefront({ initialStore }) {
   const [tagFilter, setTagFilter] = useState('Tout');
   const [promoOpen, setPromoOpen] = useState(false);
   const [faqOpen, setFaqOpen] = useState(0);
-  const promoPopup = store.promotions?.promoPopup || {};
+  const promoPopup = useMemo(() => store.promotions?.promoPopup || {}, [store.promotions?.promoPopup]);
 
   useEffect(() => {
     function onKeyDown(event) {
