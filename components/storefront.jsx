@@ -7,6 +7,11 @@ import { trackProductView } from './analytics-tracker.jsx';
 const phone = '212622222430';
 const fallback = { brand: 'Crooza', accent: '#c36e4f', background: '#f7f5ef', textColor: '#292b26', font: 'Playfair Display' };
 
+function popupStorageKey(popup = {}) {
+  const signature = [popup.title || '', popup.message || '', popup.buttonLabel || '', popup.image || ''].join('|');
+  return `crooza-promo-popup-dismissed:${signature}`;
+}
+
 function whatsapp(message) {
   return `https://wa.me/${phone}?text=${encodeURIComponent(message)}`;
 }
@@ -33,6 +38,7 @@ export default function Storefront({ initialStore }) {
   const [tagFilter, setTagFilter] = useState('Tout');
   const [promoOpen, setPromoOpen] = useState(false);
   const [faqOpen, setFaqOpen] = useState(0);
+  const promoPopup = store.promotions?.promoPopup || {};
 
   useEffect(() => {
     function onKeyDown(event) {
@@ -46,15 +52,17 @@ export default function Storefront({ initialStore }) {
   }, [selected]);
 
   useEffect(() => {
-    if (!store.promotions?.promoPopup?.enabled || cartOpen || selected || promoOpen) return undefined;
-    const key = 'crooza-promo-popup-dismissed';
-    if (window.sessionStorage.getItem(key) === '1') return undefined;
-    const timer = window.setTimeout(() => setPromoOpen(true), 8000);
+    if (!promoPopup.enabled || cartOpen || selected || promoOpen) return undefined;
+    const key = popupStorageKey(promoPopup);
+    try {
+      if (window.sessionStorage.getItem(key) === '1') return undefined;
+    } catch { /* Storage may be unavailable in a private browser tab. */ }
+    const timer = window.setTimeout(() => setPromoOpen(true), 6000);
     return () => window.clearTimeout(timer);
-  }, [store.promotions?.promoPopup?.enabled, cartOpen, selected, promoOpen]);
+  }, [promoPopup, promoPopup.enabled, promoPopup.title, promoPopup.message, promoPopup.buttonLabel, promoPopup.image, cartOpen, selected, promoOpen]);
 
   function dismissPromo() {
-    window.sessionStorage.setItem('crooza-promo-popup-dismissed', '1');
+    try { window.sessionStorage.setItem(popupStorageKey(promoPopup), '1'); } catch { /* Keep dismissal functional without storage. */ }
     setPromoOpen(false);
   }
 
@@ -92,7 +100,6 @@ export default function Storefront({ initialStore }) {
     store.promotions?.freeShipping?.enabled ? 'Livraison offerte partout au Maroc' : '',
     bundle?.enabled ? `${bundle.label || `${bundle.buyQuantity} achetées`}${giftProduct ? ` + ${giftProduct.name} offert${Number(bundle.freeQuantity) > 1 ? 's' : 'e'}` : ''}` : '',
   ].filter(Boolean);
-  const promoPopup = store.promotions?.promoPopup || {};
   const promoMessage = promoPopup.message?.trim() || activePromotions.join(' · ') || 'Découvre notre sélection Crooza du moment.';
   const gallery = selected?.photos?.length ? selected.photos : selected?.image ? [selected.image] : [];
   const fontName = String(store.font || fallback.font).replace(/["';]/g, '');
